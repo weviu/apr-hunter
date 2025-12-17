@@ -237,7 +237,6 @@ async function seedDatabase() {
     console.log('  • Binance');
     console.log('  • OKX');
     console.log('  • KuCoin');
-    console.log('  • Bybit');
     console.log('');
     console.log('Start the backend to begin fetching live data: npm run dev');
 

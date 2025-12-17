@@ -12,6 +12,8 @@ const PLATFORMS = [
   'OKX',
   'KuCoin',
   'Binance',
+  'Kraken',
+  'Aave',
 ];
 
 const POPULAR_ASSETS = [

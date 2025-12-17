@@ -22,7 +22,8 @@ const PLATFORM_LINKS: Record<string, string> = {
   'OKX': 'https://www.okx.com/earn',
   'Binance': 'https://www.binance.com/en/earn',
   'KuCoin': 'https://www.kucoin.com/earn',
-  'Bybit': 'https://www.bybit.com/earn',
+  'Kraken': 'https://www.kraken.com/learn/what-is-crypto-staking',
+  'Aave': 'https://app.aave.com',
 };
 
 // Get product type label

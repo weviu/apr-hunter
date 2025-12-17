@@ -172,7 +172,7 @@ export default function Home() {
                 More Exchanges Coming Soon
               </h2>
               <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
-                We already pull from OKX Earn, KuCoin, and Binance; next up are Bybit, Kraken, and select DeFi protocols. 
+                We already pull from OKX Earn, KuCoin, and Binance; next up are Kraken and select DeFi protocols.
                 Sign up for alerts so you’ll know as soon as new sources go live.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
@@ -184,9 +184,6 @@ export default function Home() {
                 </div>
                 <div className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400">
                   Binance ✓
-                </div>
-                <div className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400">
-                  Bybit
                 </div>
                 <div className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400">
                   Kraken

@@ -10,7 +10,8 @@ import crypto from 'crypto';
  * - OKX (Staking - Authenticated API)
  * - Binance (Simple Earn - Authenticated API)
  * - KuCoin (Earn/Staking - Authenticated API)
- * - Bybit (Flexible/Fixed Savings - Authenticated API)
+ * - Kraken (Staking - Public API)
+ * - Aave (DeFi - Public API)
  */
 
 interface DataSource {
@@ -33,9 +34,9 @@ const KUCOIN_API_KEY = process.env.KUCOIN_API_KEY || '';
 const KUCOIN_SECRET_KEY = process.env.KUCOIN_SECRET_KEY || '';
 const KUCOIN_PASSPHRASE = process.env.KUCOIN_PASSPHRASE || '';
 
-// Bybit API credentials from environment
-const BYBIT_API_KEY = process.env.BYBIT_API_KEY || '';
-const BYBIT_SECRET_KEY = process.env.BYBIT_SECRET_KEY || '';
+// Kraken API credentials (required for private staking endpoints)
+const KRAKEN_API_KEY = process.env.KRAKEN_API_KEY || '';
+const KRAKEN_SECRET_KEY = process.env.KRAKEN_SECRET_KEY || '';
 
 // Helper to make HTTP requests with timeout
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 15000): Promise<Response> {
@@ -172,67 +173,47 @@ async function kucoinAuthenticatedRequest(endpoint: string, method: string = 'GE
   return response.json();
 }
 
-// Bybit API signature generation
-function generateBybitSignature(timestamp: string, params: string): string {
-  const message = timestamp + BYBIT_API_KEY + '5000' + params;
-  return crypto.createHmac('sha256', BYBIT_SECRET_KEY).update(message).digest('hex');
-}
+// Make authenticated Kraken API request (private)
+async function krakenAuthenticatedRequest(path: string, params: Record<string, string | number> = {}): Promise<any> {
+  if (!KRAKEN_API_KEY || !KRAKEN_SECRET_KEY) {
+    throw new Error('Kraken API credentials not configured');
+  }
 
-// Make authenticated Bybit API request
-async function bybitAuthenticatedRequest(endpoint: string, params: Record<string, string> = {}): Promise<any> {
-  const timestamp = Date.now().toString();
-  const queryString = new URLSearchParams(params).toString();
-  const signature = generateBybitSignature(timestamp, queryString);
-  
-  const url = `https://api.bybit.com${endpoint}${queryString ? '?' + queryString : ''}`;
-  
-  const response = await fetchWithTimeout(url, {
-    method: 'GET',
+  const nonce = (Date.now() * 1000).toString();
+  const body = new URLSearchParams({ nonce, ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])) }).toString();
+
+  const sha256 = crypto.createHash('sha256').update(nonce + body).digest();
+  const hmac = crypto.createHmac('sha512', Buffer.from(KRAKEN_SECRET_KEY, 'base64'))
+    .update(path + sha256)
+    .digest('base64');
+
+  const response = await fetchWithTimeout(`https://api.kraken.com${path}`, {
+    method: 'POST',
     headers: {
-      'X-BAPI-API-KEY': BYBIT_API_KEY,
-      'X-BAPI-SIGN': signature,
-      'X-BAPI-TIMESTAMP': timestamp,
-      'X-BAPI-RECV-WINDOW': '5000',
+      'API-Key': KRAKEN_API_KEY,
+      'API-Sign': hmac,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
+    body,
   });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Bybit API error: ${response.status} - ${errorText}`);
+
+  const text = await response.text();
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Kraken API parse error: ${text.slice(0, 200)}`);
   }
-  
-  return response.json();
-}
 
-function isBybitUnauthorizedMessage(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return normalized.includes('401') ||
-    normalized.includes('retcode":10004') ||
-    normalized.includes('api key not authorized');
-}
-
-function logBybitFetchError(context: string, error: unknown): void {
-  const message = error instanceof Error ? error.message : String(error);
-  console.log(`Bybit ${context} not available:`, message);
-  if (isBybitUnauthorizedMessage(message)) {
-    console.log('[TIP] Ensure the Bybit API key has the Earn read-only permission and is allowed for this IP.');
+  if (!response.ok || (json?.error && json.error.length)) {
+    const errMsg = Array.isArray(json?.error) ? json.error.join('; ') : text;
+    throw new Error(`Kraken API error: ${response.status} - ${errMsg}`);
   }
+
+  return json;
 }
 
-function logBybitResponse(category: string, response: any, reason: string = 'no items'): void {
-  if (!response) return;
-  const items = response?.result?.list ?? response?.result;
-  const debugPayload = {
-    category,
-    reason,
-    retCode: response?.retCode,
-    retMsg: response?.retMsg,
-    listLength: Array.isArray(items) ? items.length : undefined,
-    sample: Array.isArray(items) ? items.slice(0, 3) : items,
-  };
-
-  console.log('[DEBUG] Bybit response', JSON.stringify(debugPayload, null, 2));
-}
+// Bybit integration removed.
 
 // Map common asset symbols
 function normalizeAsset(symbol: string): string {
@@ -269,6 +250,7 @@ function getChainForAsset(asset: string): string {
 
 class DataCollector {
   private sources: DataSource[] = [];
+  private krakenBackoffUntil = 0;
 
   constructor() {
     // Register data sources
@@ -289,9 +271,14 @@ class DataCollector {
         fetch: this.fetchKuCoinData.bind(this),
       },
       {
-        name: 'Bybit',
+        name: 'Kraken',
         type: 'exchange',
-        fetch: this.fetchBybitData.bind(this),
+        fetch: this.fetchKrakenData.bind(this),
+      },
+      {
+        name: 'Aave',
+        type: 'defi',
+        fetch: this.fetchAaveData.bind(this),
       },
     ];
   }
@@ -596,21 +583,17 @@ class DataCollector {
               results.push({
                 asset,
                 platform: 'KuCoin',
-        platformType: 'exchange',
+                platformType: 'exchange',
                 chain: getChainForAsset(asset),
                 apr,
                 apy: apr,
                 minStake: parseFloat(item.minDepositAmount || item.minStakeAmount || item.minAmount || '0'),
                 lockPeriod,
-        riskLevel: 'low',
-        lastUpdated: new Date(),
+                riskLevel: 'low',
+                lastUpdated: new Date(),
                 source: `kucoin_${endpoint.type}`,
-        createdAt: new Date(),
+                createdAt: new Date(),
               });
-  }
-
-            if (items.length > 0) {
-              console.log(`[OK] Got ${items.length} items from KuCoin ${endpoint.type}`);
             }
           }
         } catch (e: any) {
@@ -635,93 +618,150 @@ class DataCollector {
   }
 
   /**
-   * Fetch Bybit earn data using authenticated API
+   * Fetch Kraken staking data (public API)
    */
-  private async fetchBybitData(): Promise<AprDataDocument[]> {
+  private async fetchKrakenData(): Promise<AprDataDocument[]> {
     const results: AprDataDocument[] = [];
-    
-    // Check if API credentials are configured
-    if (!BYBIT_API_KEY || !BYBIT_SECRET_KEY) {
-      console.log('[WARN] Bybit API credentials not configured, skipping Bybit');
-      return results;
-    }
-    
     try {
-      console.log('[AUTH] Using authenticated Bybit API for earn rates...');
-      
-      // Bybit Earn products (flex + fixed) - fetch all and parse
-      try {
-        const attempts = [
-          { label: 'no_params', params: {} },
-          { label: 'unified', params: { accountType: 'UNIFIED' } },
-          { label: 'contract', params: { accountType: 'CONTRACT' } },
-          { label: 'flexible_only', params: { category: 'Flexible' } },
-          { label: 'fixed_only', params: { category: 'Fixed' } },
-        ];
-
-        let fetched = false;
-
-        for (const attempt of attempts) {
-          const bybitData = await bybitAuthenticatedRequest('/v5/earn/product', attempt.params);
-
-          if (bybitData?.retCode === 0 && Array.isArray(bybitData.result?.list) && bybitData.result.list.length > 0) {
-            const before = results.length;
-            for (const product of bybitData.result.list) {
-              const asset = normalizeAsset(product.coin || '');
-              if (!asset) continue;
-
-              let apr = parseFloat(product.estApy || product.latestApy || '0');
-              if (apr > 0 && apr < 1) apr = apr * 100;
-              if (apr <= 0 || apr > 500) continue;
-
-              const lockPeriod = product.period ? `${product.period} days` : 'Flexible';
-              const source = product.period ? 'bybit_fixed' : 'bybit_flexible';
-
-              const existingIndex = results.findIndex(r => r.asset === asset && r.lockPeriod === lockPeriod);
-              if (existingIndex >= 0) {
-                if (results[existingIndex].apr >= apr) continue;
-                results.splice(existingIndex, 1);
-              }
-
-              results.push({
-                asset,
-                platform: 'Bybit',
-                platformType: 'exchange',
-                chain: getChainForAsset(asset),
-                apr,
-                apy: apr,
-                minStake: parseFloat(product.minStakeAmount || '0'),
-                lockPeriod,
-                riskLevel: 'low',
-        lastUpdated: new Date(),
-                source,
-        createdAt: new Date(),
-              });
-            }
-            const added = results.length - before;
-            console.log(`[OK] Got ${added} products from Bybit Earn via ${attempt.label}`);
-            fetched = true;
-            break;
-          } else {
-            logBybitResponse(attempt.label, bybitData);
-          }
-        }
-
-        if (!fetched) {
-          console.log('[INFO] Bybit earn returned zero items across all attempts');
-        }
-      } catch (e: any) {
-        logBybitFetchError('earn', e);
+      if (Date.now() < this.krakenBackoffUntil) {
+        console.log('[INFO] Skipping Kraken due to temporary lockout backoff');
+        return results;
+      }
+      if (!KRAKEN_API_KEY || !KRAKEN_SECRET_KEY) {
+        console.warn('[WARN] Kraken API credentials not configured, skipping Kraken');
+        return results;
       }
 
+      // Kraken Earn strategies (staking successor)
+      const json = await krakenAuthenticatedRequest('/0/private/Earn/Strategies');
+      const rawStrategies = json?.result || [];
+      const strategies = Array.isArray(rawStrategies) ? rawStrategies : Object.values(rawStrategies);
+
+      for (const item of strategies) {
+        const asset = normalizeAsset(
+          item.asset || item.assetSymbol || item.altname || item.name || item.staking_asset || item.currency || ''
+        );
+        const reward = parseFloat(
+          item.reward_rate ||
+          item.reward ||
+          item.apr ||
+          item.estimated_reward_rate ||
+          item.estimated_apr ||
+          item.earn_apr ||
+          '0'
+        );
+        if (!asset || reward <= 0 || Number.isNaN(reward)) continue;
+
+        const lock =
+          item.lockup_period ||
+          item.min_lock ||
+          item.lock_time ||
+          item.staking_period ||
+          item.duration ||
+          item.term ||
+          'Flexible';
+
+        results.push({
+          asset,
+          platform: 'Kraken',
+          platformType: 'exchange',
+          chain: getChainForAsset(asset),
+          apr: reward * 100, // Kraken returns decimal reward_rate
+          apy: reward * 100,
+          minStake: 0,
+          lockPeriod: typeof lock === 'number' ? `${lock} days` : String(lock),
+          riskLevel: 'low',
+          lastUpdated: new Date(),
+          source: 'kraken_staking',
+          createdAt: new Date(),
+        });
+      }
       if (results.length === 0) {
-        console.log('[WARN] No earn products found from Bybit API');
+        console.log('[WARN] No staking products found from Kraken API');
+      } else {
+        console.log(`[OK] Got ${results.length} products from Kraken`);
+      }
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (message.includes('Temporary lockout')) {
+        this.krakenBackoffUntil = Date.now() + 60_000;
+        console.warn('[WARN] Kraken temporary lockout – backing off 60s');
+      }
+      console.error('[ERROR] Kraken API error:', error.message);
+    }
+    return results;
+  }
+
+  /**
+   * Fetch Aave supply rates (public API)
+   */
+  private async fetchAaveData(): Promise<AprDataDocument[]> {
+    const results: AprDataDocument[] = [];
+    try {
+      // Aave v3 markets data (mainnet) – try network param first, then fallback
+      const urls = [
+        'https://aave-api-v3.aave.com/data/markets-data?network=ethereum',
+        'https://aave-api-v3.aave.com/data/markets-data',
+        'https://aave-api-v2.aave.com/data/markets-data',
+      ];
+
+      let data: any = null;
+      let lastError: string | null = null;
+
+      for (const url of urls) {
+        try {
+          const res = await fetchWithTimeout(url, {
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+          const text = await res.text();
+          try {
+            data = JSON.parse(text);
+            lastError = null;
+            break;
+          } catch {
+            lastError = `Aave API parse error from ${url}: ${text.slice(0, 200)}`;
+          }
+        } catch (err: any) {
+          lastError = `Aave API fetch error from ${url}: ${err?.message || err}`;
+        }
       }
 
-    } catch (error: any) {
-      console.error('[ERROR] Bybit API error:', error.message);
-    }
+      if (!data) {
+        throw new Error(lastError || 'Aave API returned no data');
+      }
 
+      const markets = Array.isArray(data) ? data : data?.markets || [];
+      for (const m of markets) {
+        const asset = normalizeAsset(m?.symbol || m?.underlyingAsset || '');
+        const liquidityRate = parseFloat(m?.liquidityRate || '0'); // ray
+        if (!asset || liquidityRate <= 0) continue;
+        const apr = (liquidityRate / 1e27) * 100; // convert from ray to percent
+        if (apr <= 0 || apr > 500) continue;
+        results.push({
+          asset,
+          platform: 'Aave',
+          platformType: 'defi',
+          chain: getChainForAsset(asset),
+          apr,
+          apy: apr,
+          minStake: 0,
+          lockPeriod: 'Flexible',
+          riskLevel: 'low',
+          lastUpdated: new Date(),
+          source: 'aave_supply',
+          createdAt: new Date(),
+        });
+      }
+      if (results.length === 0) {
+        console.log('[WARN] No supply products found from Aave API');
+      } else {
+        console.log(`[OK] Got ${results.length} products from Aave`);
+      }
+    } catch (error: any) {
+      console.error('[ERROR] Aave API error:', error.message);
+    }
     return results;
   }
 

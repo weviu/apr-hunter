@@ -156,7 +156,7 @@ Business Challenges
 What We're Doing Next
 
 1. Finish Portfolio Tracking: Get the basic version live
-2. Add Bybit & KuCoin Data: Already mostly integrated
+2. Add KuCoin Data: Already mostly integrated
 3. Set Up Alert System: Email notifications for APR changes
 
 ---
