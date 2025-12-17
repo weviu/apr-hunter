@@ -15,7 +15,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <TrendingUp className="h-8 w-8 text-emerald-500" />
-            <h1 className="text-2xl font-bold text-white">APR Finder</h1>
+            <h1 className="text-2xl font-bold text-white">APR Hunter</h1>
           </Link>
 
           {/* Navigation */}

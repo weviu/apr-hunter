@@ -74,15 +74,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* What is APR Finder Section */}
+      {/* What is APR Hunter Section */}
       <section className="py-16 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
-              What is APR Finder?
+              What is APR Hunter?
           </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              APR Finder is an informational hub that collects live staking, savings, and earn rates from OKX, KuCoin, and Binance.
+              APR Hunter is an informational hub that collects live staking, savings, and earn rates from OKX, KuCoin, and Binance.
               We highlight the freshest APR/APY data so you can decide where to lock in yield.
           </p>
         </div>
@@ -203,10 +203,10 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-6 w-6 text-emerald-500" />
-              <span className="text-lg font-bold text-white">APR Finder</span>
+              <span className="text-lg font-bold text-white">APR Hunter</span>
             </div>
             <p className="text-sm text-gray-500">
-              © 2025 APR Finder. Data is for informational purposes only.
+              © 2025 APR Hunter. Data is for informational purposes only.
             </p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>Data from OKX Earn, KuCoin Earn, Binance Simple Earn</span>

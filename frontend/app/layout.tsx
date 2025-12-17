@@ -6,7 +6,7 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'APR Finder - Crypto Investment Platform',
+  title: 'APR Hunter - Crypto Investment Platform',
   description: 'Discover and compare staking opportunities across exchanges and DeFi protocols',
 };
 

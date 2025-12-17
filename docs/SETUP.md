@@ -1,4 +1,4 @@
-# APR Finder - Setup Guide
+# APR Hunter - Setup Guide
 
 ## Prerequisites
 

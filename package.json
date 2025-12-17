@@ -1,7 +1,7 @@
 {
   "name": "apr-finder",
   "version": "1.0.0",
-  "description": "APR Finder - Crypto Investment Platform",
+  "description": "APR Hunter - Crypto Investment Platform",
   "private": true,
   "workspaces": [
     "backend",

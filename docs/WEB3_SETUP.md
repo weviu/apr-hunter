@@ -58,7 +58,7 @@ npm run dev
 2. Sign up for a free account (or log in)
 3. Click **"Create New Project"**
 4. Fill in:
-   - **Project Name**: APR Finder (or any name you prefer)
+   - **Project Name**: APR Hunter (or any name you prefer)
    - **Homepage URL**: `http://localhost:3000` (for development)
    - **Allowed Domains**: `localhost:3000` (add your production domain later)
 5. Click **"Create"**

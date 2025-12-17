@@ -17,7 +17,7 @@ const { chains, publicClient } = configureChains(
 
 // Get default wallets
 const { connectors } = getDefaultWallets({
-  appName: 'APR Finder',
+  appName: 'APR Hunter',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id',
   chains,
 });

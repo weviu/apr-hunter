@@ -1,8 +1,8 @@
-APR Finder - Crypto Investment Platform
+APR Hunter - Crypto Investment Platform
 
 # Project Overview
 
-APR Finder is a comprehensive web platform that helps cryptocurrency investors discover and compare staking and investment opportunities across multiple exchanges and defi protocols. The platform collects real-time Annual Percentage Rate (APR) data to help users make informed investment decisions.
+APR Hunter is a comprehensive web platform that helps cryptocurrency investors discover and compare staking and investment opportunities across multiple exchanges and defi protocols. The platform collects real-time Annual Percentage Rate (APR) data to help users make informed investment decisions.
 
 # The Problem We're Solving
 
@@ -16,7 +16,7 @@ Currently, cryptocurrency investors face several challenges:
 
 # Our Solution
 
-APR Finder provides a centralized platform that:
+APR Hunter provides a centralized platform that:
 
 · Collects APR data from major exchanges (Binance, Kraken, OKX) and DeFi protocols (Compound, Aave, Yearn)
 · Multi-chain support: Ethereum, BSC, Polygon, Solana, Avalanche

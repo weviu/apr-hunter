@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Follow these steps to get APR Finder up and running on your machine.
+Follow these steps to get APR Hunter up and running on your machine.
 
 ## Step 1: Prerequisites Check
 
@@ -156,7 +156,7 @@ Open your browser and navigate to:
 http://localhost:3000
 ```
 
-You should see the APR Finder homepage with:
+You should see the APR Hunter homepage with:
 - Top APR opportunities
 - APR comparison dashboard
 - Navigation to Assets and Platforms pages

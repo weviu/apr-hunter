@@ -61,7 +61,7 @@ async function start() {
     // Root route - API information
     fastify.get('/', async () => {
       return {
-        name: 'APR Finder API',
+        name: 'APR Hunter API',
         version: '1.0.0',
         status: 'running',
         endpoints: {
