@@ -23,8 +23,13 @@ const fastify = Fastify({
 async function start() {
   try {
     // Register plugins
+    const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
+
     await fastify.register(cors, {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: allowedOrigins,
       credentials: true,
     });
 

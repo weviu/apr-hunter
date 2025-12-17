@@ -1,7 +1,6 @@
 'use client';
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { ConnectWallet } from '@connectwallet/react';
 
 export function WalletConnect() {
   const { isConnected, address } = useAccount();
@@ -26,7 +25,19 @@ export function WalletConnect() {
 
   return (
     <div className="flex items-center space-x-4">
-      <ConnectWallet.Button />
+      {!connectors.length && (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          No wallet connectors available
+        </span>
+      )}
+      {connectors.length > 0 && (
+      <button
+        onClick={() => connect({ connector: connectors[0] })}
+        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+      >
+        Connect Wallet
+      </button>
+      )}
     </div>
   );
 }

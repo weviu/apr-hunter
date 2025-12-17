@@ -34,7 +34,7 @@ export async function fetchAssetPrices(assets: string[]): Promise<Record<string,
     throw new Error(`CoinGecko error: ${response.status}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as Record<string, { usd?: number } | null>;
   const reverseMap: Record<string, string> = {};
   for (const [symbol, id] of Object.entries(COIN_GECKO_IDS)) {
     reverseMap[id] = symbol;
@@ -43,7 +43,8 @@ export async function fetchAssetPrices(assets: string[]): Promise<Record<string,
   const prices: Record<string, number> = {};
   for (const [id, priceObj] of Object.entries(data)) {
     const symbol = reverseMap[id];
-    if (symbol && typeof priceObj === 'object' && priceObj.usd) {
+    if (!symbol) continue;
+    if (priceObj && typeof priceObj === 'object' && typeof priceObj.usd === 'number') {
       prices[symbol] = priceObj.usd;
     }
   }

@@ -292,8 +292,9 @@ class DataCollector {
     
     // Check if API credentials are configured
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
-      console.log('[WARN] OKX API credentials not configured, using public API fallback');
-      return this.fetchOKXPublicData();
+      console.log('[WARN] OKX API credentials not configured; skipping OKX authenticated fetch');
+      // No public fallback implemented; return empty to continue.
+      return [];
     }
     
     try {

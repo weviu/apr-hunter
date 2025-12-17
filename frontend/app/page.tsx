@@ -48,10 +48,10 @@ export default function Home() {
                 <ArrowRight className="h-5 w-5" />
               </a>
               <Link
-                href="/register"
+                href="/dashboard"
                 className="px-8 py-3 rounded-lg border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white font-semibold transition-colors"
               >
-                Create Account
+                Go to Dashboard
               </Link>
             </div>
 
@@ -206,7 +206,7 @@ export default function Home() {
               <span className="text-lg font-bold text-white">APR Finder</span>
             </div>
             <p className="text-sm text-gray-500">
-              © 2024 APR Finder. Data is for informational purposes only.
+              © 2025 APR Finder. Data is for informational purposes only.
             </p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>Data from OKX Earn, KuCoin Earn, Binance Simple Earn</span>
