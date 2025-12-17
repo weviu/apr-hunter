@@ -207,18 +207,33 @@ export function TopOpportunities() {
       )}
       
       {/* Data source attribution */}
-      <div className="mt-4 pt-4 border-t border-gray-700 text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-gray-700 text-xs text-gray-500 space-y-2">
         <p>
           Data sourced from{' '}
           <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
-            OKX
+            OKX Earn
           </a>
-          {' & '}
+          {', '}
           <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
-            KuCoin
+            KuCoin Earn
           </a>
-          . Real-time rates via authenticated APIs.
+          {', and '}
+          <a href="https://www.binance.com/en/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
+            Binance Simple Earn
+          </a>
+          . Real staking rates, updated every 30 seconds.
         </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+          <span className="flex items-center gap-1 text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span> Live
+            <span className="w-2 h-2 rounded-full bg-yellow-500 ml-2"></span> &lt;1h
+            <span className="w-2 h-2 rounded-full bg-orange-500 ml-2"></span> &gt;1h
+            <span className="w-2 h-2 rounded-full bg-red-500 ml-2"></span> Stale
+          </span>
+          <span className="text-gray-500 hidden sm:inline">
+            Refreshes every 30 seconds
+          </span>
+        </div>
       </div>
     </div>
   );

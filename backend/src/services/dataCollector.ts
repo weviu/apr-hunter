@@ -219,6 +219,21 @@ function logBybitFetchError(context: string, error: unknown): void {
   }
 }
 
+function logBybitResponse(category: string, response: any, reason: string = 'no items'): void {
+  if (!response) return;
+  const items = response?.result?.list ?? response?.result;
+  const debugPayload = {
+    category,
+    reason,
+    retCode: response?.retCode,
+    retMsg: response?.retMsg,
+    listLength: Array.isArray(items) ? items.length : undefined,
+    sample: Array.isArray(items) ? items.slice(0, 3) : items,
+  };
+
+  console.log('[DEBUG] Bybit response', JSON.stringify(debugPayload, null, 2));
+}
+
 // Map common asset symbols
 function normalizeAsset(symbol: string): string {
   const mapping: Record<string, string> = {
@@ -634,85 +649,69 @@ class DataCollector {
     try {
       console.log('[AUTH] Using authenticated Bybit API for earn rates...');
       
-      // Bybit Earn flexible savings
+      // Bybit Earn products (flex + fixed) - fetch all and parse
       try {
-        const flexibleData = await bybitAuthenticatedRequest('/v5/earn/product', {
-          category: 'FlexibleSaving',
-        });
-        
-        if (flexibleData?.retCode === 0 && flexibleData?.result?.list) {
-          for (const product of flexibleData.result.list) {
-            const asset = normalizeAsset(product.coin || '');
-            if (!asset) continue;
-            
-            // APY can be in different formats
-            let apr = parseFloat(product.estApy || product.latestApy || '0');
-            if (apr > 0 && apr < 1) apr = apr * 100;
-            
-            if (apr <= 0 || apr > 500) continue;
-            
-            results.push({
-              asset,
-              platform: 'Bybit',
-              platformType: 'exchange',
-              chain: getChainForAsset(asset),
-              apr,
-              apy: apr,
-              minStake: parseFloat(product.minStakeAmount || '0'),
-              lockPeriod: 'Flexible',
-              riskLevel: 'low',
-              lastUpdated: new Date(),
-              source: 'bybit_flexible',
-              createdAt: new Date(),
-            });
-          }
-          console.log(`[OK] Got ${results.length} flexible products from Bybit`);
-        }
-      } catch (e: any) {
-        logBybitFetchError('flexible earn', e);
-      }
+        const attempts = [
+          { label: 'no_params', params: {} },
+          { label: 'unified', params: { accountType: 'UNIFIED' } },
+          { label: 'contract', params: { accountType: 'CONTRACT' } },
+          { label: 'flexible_only', params: { category: 'Flexible' } },
+          { label: 'fixed_only', params: { category: 'Fixed' } },
+        ];
 
-      // Bybit Earn fixed savings
-      try {
-        const fixedData = await bybitAuthenticatedRequest('/v5/earn/product', {
-          category: 'FixedSaving',
-        });
-        
-        if (fixedData?.retCode === 0 && fixedData?.result?.list) {
-          for (const product of fixedData.result.list) {
-            const asset = normalizeAsset(product.coin || '');
-            if (!asset) continue;
-            
-            let apr = parseFloat(product.estApy || product.latestApy || '0');
-            if (apr > 0 && apr < 1) apr = apr * 100;
-            
-            if (apr <= 0 || apr > 500) continue;
-            
-            const lockPeriod = product.period ? `${product.period} days` : 'Locked';
-            
-            // Skip duplicates
-            const exists = results.find(r => r.asset === asset && r.lockPeriod === lockPeriod);
-            if (exists) continue;
-            
-            results.push({
-              asset,
-              platform: 'Bybit',
-              platformType: 'exchange',
-              chain: getChainForAsset(asset),
-              apr,
-              apy: apr,
-              minStake: parseFloat(product.minStakeAmount || '0'),
-              lockPeriod,
-              riskLevel: 'low',
-              lastUpdated: new Date(),
-              source: 'bybit_fixed',
-              createdAt: new Date(),
-            });
+        let fetched = false;
+
+        for (const attempt of attempts) {
+          const bybitData = await bybitAuthenticatedRequest('/v5/earn/product', attempt.params);
+
+          if (bybitData?.retCode === 0 && Array.isArray(bybitData.result?.list) && bybitData.result.list.length > 0) {
+            const before = results.length;
+            for (const product of bybitData.result.list) {
+              const asset = normalizeAsset(product.coin || '');
+              if (!asset) continue;
+
+              let apr = parseFloat(product.estApy || product.latestApy || '0');
+              if (apr > 0 && apr < 1) apr = apr * 100;
+              if (apr <= 0 || apr > 500) continue;
+
+              const lockPeriod = product.period ? `${product.period} days` : 'Flexible';
+              const source = product.period ? 'bybit_fixed' : 'bybit_flexible';
+
+              const existingIndex = results.findIndex(r => r.asset === asset && r.lockPeriod === lockPeriod);
+              if (existingIndex >= 0) {
+                if (results[existingIndex].apr >= apr) continue;
+                results.splice(existingIndex, 1);
+              }
+
+              results.push({
+                asset,
+                platform: 'Bybit',
+                platformType: 'exchange',
+                chain: getChainForAsset(asset),
+                apr,
+                apy: apr,
+                minStake: parseFloat(product.minStakeAmount || '0'),
+                lockPeriod,
+                riskLevel: 'low',
+                lastUpdated: new Date(),
+                source,
+                createdAt: new Date(),
+              });
+            }
+            const added = results.length - before;
+            console.log(`[OK] Got ${added} products from Bybit Earn via ${attempt.label}`);
+            fetched = true;
+            break;
+          } else {
+            logBybitResponse(attempt.label, bybitData);
           }
-          console.log(`[OK] Got fixed products from Bybit`);
+        }
+
+        if (!fetched) {
+          console.log('[INFO] Bybit earn returned zero items across all attempts');
         }
       } catch (e: any) {
-        logBybitFetchError('fixed earn', e);
+        logBybitFetchError('earn', e);
       }
 
       if (results.length === 0) {

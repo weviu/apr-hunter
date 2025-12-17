@@ -22,7 +22,7 @@ export default function Home() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm mb-8">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live data from OKX & KuCoin
+              Live data from OKX, KuCoin & Binance
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -34,8 +34,8 @@ export default function Home() {
               </h1>
             
             <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-              Compare APR and APY rates across exchanges in real-time. 
-              Make informed decisions about where to stake your crypto assets.
+              Real staking rates pulled from OKX Earn, KuCoin, and Binance feeds every 30 seconds.
+              Compare APR and APY side-by-side so you can stake where it makes sense.
             </p>
 
             {/* CTA Buttons */}
@@ -58,16 +58,16 @@ export default function Home() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto">
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-white">2</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white">3</div>
                 <div className="text-sm text-gray-500">Exchanges</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-white">450+</div>
-                <div className="text-sm text-gray-500">Products</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white">Real</div>
+                <div className="text-sm text-gray-500">Staking Rates</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-white">30s</div>
-                <div className="text-sm text-gray-500">Refresh Rate</div>
+                <div className="text-sm text-gray-500">Refresh</div>
               </div>
             </div>
           </div>
@@ -82,9 +82,8 @@ export default function Home() {
               What is APR Finder?
           </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              APR Finder is a real-time aggregator that collects and displays staking, savings, 
-              and earn rates from cryptocurrency exchanges. We help you find where your crypto 
-              can earn the highest yields.
+              APR Finder is an informational hub that collects live staking, savings, and earn rates from OKX, KuCoin, and Binance.
+              We highlight the freshest APR/APY data so you can decide where to lock in yield.
           </p>
         </div>
 
@@ -95,10 +94,10 @@ export default function Home() {
                 <Database className="h-6 w-6 text-emerald-500" />
               </div>
               <h3 className="text-xl font-semibold mb-2 text-white">
-                Real Data
+                Exchange Earn Feeds
             </h3>
               <p className="text-gray-400">
-                We pull live data directly from exchange APIs. No fake numbers or outdated information.
+                Authenticated data from OKX, KuCoin, and Binance earn layers power these live staking numbers.
             </p>
           </div>
             
@@ -110,7 +109,7 @@ export default function Home() {
                 Compare Easily
             </h3>
               <p className="text-gray-400">
-                See all rates side-by-side. Filter by asset, lock period, and risk level to find your perfect match.
+                Filter by asset, lock period, and risk level so you know exactly where each exchange earn product stands.
             </p>
           </div>
             
@@ -122,7 +121,7 @@ export default function Home() {
                 Always Fresh
             </h3>
               <p className="text-gray-400">
-                Data refreshes every 30 seconds. See freshness indicators to know exactly how current the rates are.
+                Rates update every 30 seconds and freshness badges highlight how recently OKX responded.
             </p>
           </div>
         </div>
@@ -153,8 +152,11 @@ export default function Home() {
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Compare APR Rates
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               Select an asset to see all available staking options
+            </p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Data sourced from OKX Earn, KuCoin Earn, and Binance Simple Earn. Real staking rates, updated every 30 seconds.
             </p>
           </div>
           <AprComparison />
@@ -170,8 +172,8 @@ export default function Home() {
                 More Exchanges Coming Soon
               </h2>
               <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
-                We're working on adding data from Binance, Bybit, Kraken, and DeFi protocols 
-                like Aave, Compound, and Lido. Create an account to be notified when we add new sources.
+                We already pull from OKX Earn, KuCoin, and Binance; next up are Bybit, Kraken, and select DeFi protocols. 
+                Sign up for alerts so you’ll know as soon as new sources go live.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <div className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400">
@@ -180,8 +182,8 @@ export default function Home() {
                 <div className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400">
                   KuCoin ✓
                 </div>
-                <div className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400">
-                  Binance
+                <div className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400">
+                  Binance ✓
                 </div>
                 <div className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400">
                   Bybit
@@ -210,13 +212,7 @@ export default function Home() {
               © 2024 APR Finder. Data is for informational purposes only.
             </p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
-              <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-500">
-                OKX
-              </a>
-              <span>•</span>
-              <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-500">
-                KuCoin
-              </a>
+              <span>Data from OKX Earn, KuCoin Earn, Binance Simple Earn</span>
             </div>
           </div>
         </div>

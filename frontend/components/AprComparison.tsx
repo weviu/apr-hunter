@@ -276,6 +276,14 @@ export function AprComparison() {
           <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
             OKX Earn
           </a>
+          {', '}
+          <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
+            KuCoin Earn
+          </a>
+          {', and '}
+          <a href="https://www.binance.com/en/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
+            Binance Simple Earn
+          </a>
           . Real staking rates, updated every 30 seconds.
         </p>
         <p className="flex items-center gap-1">
