@@ -29,6 +29,8 @@ interface Position {
   notes?: string;
   createdAt: string;
   currentValue?: number;
+  aprSource?: string;
+  aprLastUpdated?: string;
 }
 
 interface PortfolioStats {
@@ -138,6 +140,16 @@ export default function DashboardPage() {
 
   const positions = stats?.positions || [];
   const hasPositions = positions.length > 0;
+
+  const getFreshness = (lastUpdated?: string) => {
+    if (!lastUpdated) return { label: 'Unknown', dot: 'bg-gray-500', color: 'text-gray-500' };
+    const updated = new Date(lastUpdated);
+    const diffMinutes = Math.floor((Date.now() - updated.getTime()) / (1000 * 60));
+    if (diffMinutes < 5) return { label: 'Live', dot: 'bg-green-500', color: 'text-green-400' };
+    if (diffMinutes < 60) return { label: `${diffMinutes}m`, dot: 'bg-yellow-500', color: 'text-yellow-400' };
+    if (diffMinutes < 1440) return { label: `${Math.floor(diffMinutes / 60)}h`, dot: 'bg-orange-500', color: 'text-orange-400' };
+    return { label: `${Math.floor(diffMinutes / 1440)}d`, dot: 'bg-red-500', color: 'text-red-400' };
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -263,12 +275,22 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                               <p className="text-sm text-gray-400">
-                                APR: {position.currentApr || position.entryApr}%
-                                {position.currentValue && (
+                                APR: {(position.currentApr ?? position.entryApr)?.toFixed(2)}%
+                                {position.currentValue !== undefined && (
                                   <span className="ml-2">
                                     • Value: ${position.currentValue.toLocaleString()}
                                   </span>
                                 )}
+                              </p>
+                              <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                <span className="flex items-center gap-1">
+                                  <span className={`w-2 h-2 rounded-full ${getFreshness(position.aprLastUpdated).dot}`}></span>
+                                  <span className={getFreshness(position.aprLastUpdated).color}>
+                                    {getFreshness(position.aprLastUpdated).label}
+                                  </span>
+                                </span>
+                                <span>•</span>
+                                <span>Source: {position.aprSource || position.platform}</span>
                               </p>
                             </div>
                           </div>

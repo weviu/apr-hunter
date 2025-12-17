@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { TrendingUp, TrendingDown, ExternalLink, Clock, RefreshCw, Info } from 'lucide-react';
 
@@ -60,6 +60,73 @@ function getFreshness(lastUpdated?: string): { label: string; color: string; dot
 
 export function AprComparison() {
   const [selectedAsset, setSelectedAsset] = useState<string>('BTC');
+  const [assetSearch, setAssetSearch] = useState<string>('');
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const blurTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const aprAssetsQuery = useQuery({
+    queryKey: ['apr-assets'],
+    queryFn: () => api.get('/api/apr/assets'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const allAssetsQuery = useQuery({
+    queryKey: ['all-assets'],
+    queryFn: () => api.get('/api/assets'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const assetOptions = useMemo(() => {
+    const aprAssets = aprAssetsQuery.data?.data?.data || [];
+    const allAssets = allAssetsQuery.data?.data?.data || [];
+
+    const mergedMap = new Map<string, string>();
+
+    for (const a of allAssets) {
+      if (a?.symbol) mergedMap.set(a.symbol.toUpperCase(), a.name || a.symbol);
+    }
+    for (const a of aprAssets) {
+      if (a?.symbol) mergedMap.set(a.symbol.toUpperCase(), a.name || a.symbol);
+    }
+
+    const merged = Array.from(mergedMap.entries()).map(([symbol, name]) => ({
+      value: symbol,
+      label: `${name} (${symbol})`,
+    }));
+
+    if (merged.length > 0) {
+      return merged.sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    // fallback static list
+    return [
+      { value: 'BTC', label: 'Bitcoin (BTC)' },
+      { value: 'ETH', label: 'Ethereum (ETH)' },
+      { value: 'USDT', label: 'Tether (USDT)' },
+      { value: 'USDC', label: 'USD Coin (USDC)' },
+      { value: 'SOL', label: 'Solana (SOL)' },
+      { value: 'TON', label: 'Toncoin (TON)' },
+      { value: 'XRP', label: 'XRP' },
+      { value: 'ADA', label: 'Cardano (ADA)' },
+      { value: 'DOGE', label: 'Dogecoin (DOGE)' },
+      { value: 'AVAX', label: 'Avalanche (AVAX)' },
+      { value: 'DOT', label: 'Polkadot (DOT)' },
+      { value: 'MATIC', label: 'Polygon (MATIC)' },
+      { value: 'ATOM', label: 'Cosmos (ATOM)' },
+      { value: 'TRX', label: 'TRON (TRX)' },
+      { value: 'LINK', label: 'Chainlink (LINK)' },
+    ];
+  }, [aprAssetsQuery.data, allAssetsQuery.data]);
+
+  const filteredAssets = useMemo(() => {
+    const term = assetSearch.trim().toLowerCase();
+    if (!term) return assetOptions;
+    return assetOptions.filter(
+      (opt) =>
+        opt.value.toLowerCase().includes(term) ||
+        opt.label.toLowerCase().includes(term)
+    );
+  }, [assetOptions, assetSearch]);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['apr', selectedAsset],
@@ -68,6 +135,10 @@ export function AprComparison() {
   });
 
   const aprData: AprData[] = data?.data?.data || [];
+  const knownPlatforms = ['OKX', 'Binance', 'KuCoin'];
+  const missingPlatforms = knownPlatforms.filter(
+    (p) => !aprData.some((d) => d.platform.toLowerCase() === p.toLowerCase())
+  );
 
   const getRiskColor = (risk?: string) => {
     switch (risk) {
@@ -112,27 +183,47 @@ export function AprComparison() {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Select Asset
           </label>
-          <select
-            value={selectedAsset}
-            onChange={(e) => setSelectedAsset(e.target.value)}
-            className="px-4 py-2 border border-gray-600 rounded-lg bg-gray-900 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          >
-            <option value="BTC">Bitcoin (BTC)</option>
-            <option value="ETH">Ethereum (ETH)</option>
-            <option value="USDT">Tether (USDT)</option>
-            <option value="USDC">USD Coin (USDC)</option>
-            <option value="SOL">Solana (SOL)</option>
-            <option value="TON">Toncoin (TON)</option>
-            <option value="XRP">XRP</option>
-            <option value="ADA">Cardano (ADA)</option>
-            <option value="DOGE">Dogecoin (DOGE)</option>
-            <option value="AVAX">Avalanche (AVAX)</option>
-            <option value="DOT">Polkadot (DOT)</option>
-            <option value="MATIC">Polygon (MATIC)</option>
-            <option value="ATOM">Cosmos (ATOM)</option>
-            <option value="TRX">TRON (TRX)</option>
-            <option value="LINK">Chainlink (LINK)</option>
-          </select>
+          <div className="space-y-2 relative">
+            <input
+              type="text"
+              value={assetSearch}
+              onChange={(e) => setAssetSearch(e.target.value)}
+              onFocus={() => {
+                if (blurTimeout.current) clearTimeout(blurTimeout.current);
+                setIsSearchOpen(true);
+              }}
+              onBlur={() => {
+                // Delay closing to allow click selection
+                blurTimeout.current = setTimeout(() => setIsSearchOpen(false), 120);
+              }}
+              placeholder="Search assets..."
+              className="w-full px-4 py-2 border border-gray-600 rounded-lg bg-gray-900 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+            {isSearchOpen && (
+              <div className="absolute z-10 w-full max-h-48 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 divide-y divide-gray-800 shadow-lg">
+                {filteredAssets.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">No assets found</div>
+                ) : (
+                  filteredAssets.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onMouseDown={(e) => e.preventDefault()} // prevent input blur before click
+                      onClick={() => {
+                        setSelectedAsset(opt.value);
+                        setAssetSearch('');
+                        setIsSearchOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition-colors ${
+                        selectedAsset === opt.value ? 'bg-emerald-500/10 text-emerald-300' : 'text-gray-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Refresh controls */}
@@ -157,10 +248,10 @@ export function AprComparison() {
         <div className="text-center py-12">
           <Info className="h-12 w-12 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400">
-            No staking data available for <span className="text-white font-semibold">{selectedAsset}</span> on OKX.
+            No staking data available for <span className="text-white font-semibold">{selectedAsset}</span> on our active exchanges.
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            This asset may not have staking options. More exchanges coming soon!
+            This asset may not have staking options right now. Try another asset or check back soon.
           </p>
         </div>
       ) : (
@@ -266,6 +357,12 @@ export function AprComparison() {
               })}
             </tbody>
           </table>
+
+          {missingPlatforms.length > 0 && (
+            <div className="mt-4 text-xs text-gray-500">
+              No offers currently for {selectedAsset} on {missingPlatforms.join(', ')}. Data shown only for exchanges that have this asset.
+            </div>
+          )}
         </div>
       )}
       

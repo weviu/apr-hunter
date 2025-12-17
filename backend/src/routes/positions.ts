@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
 import { getDatabase } from '../config/database';
 import { CreatePositionSchema, UpdatePositionSchema, PositionDocument } from '../models/Position';
+import { fetchAssetPrices } from '../services/priceService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
@@ -28,6 +29,20 @@ export async function positionRoutes(fastify: FastifyInstance) {
   // All routes require authentication
   fastify.addHook('preHandler', authenticate);
 
+  async function enrichPositionWithApr(db: any, position: any) {
+    const aprData = await db.collection('apr_data').findOne({
+      platform: { $regex: new RegExp(`^${position.platform}$`, 'i') },
+      asset: { $regex: new RegExp(`^${position.asset}$`, 'i') },
+    });
+
+    if (aprData) {
+      position.currentApr = aprData.apr;
+      position.aprSource = aprData.source || aprData.platform;
+      position.aprLastUpdated = aprData.lastUpdated || new Date();
+    }
+    return position;
+  }
+
   // GET /api/positions - Get all positions for the authenticated user
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -39,8 +54,14 @@ export async function positionRoutes(fastify: FastifyInstance) {
         .find({ userId, status: 'active' })
         .sort({ createdAt: -1 })
         .toArray();
+
+      // Attach latest APR/source info
+      const enriched = [];
+      for (const pos of positions) {
+        enriched.push(await enrichPositionWithApr(db, pos));
+      }
       
-      return reply.send(positions);
+      return reply.send(enriched);
     } catch (error) {
       console.error('Error fetching positions:', error);
       return reply.status(500).send({ error: 'Failed to fetch positions' });
@@ -57,6 +78,21 @@ export async function positionRoutes(fastify: FastifyInstance) {
         .collection('positions')
         .find({ userId, status: 'active' })
         .toArray() as PositionDocument[];
+
+      const assets = Array.from(new Set(positions.map((p) => p.asset.toUpperCase())));
+      const priceMap = await fetchAssetPrices(assets);
+
+      for (const pos of positions) {
+        const price = priceMap[pos.asset.toUpperCase()];
+        if (price) {
+          pos.currentPrice = price;
+        }
+      }
+
+      // Attach latest APR/source info
+      for (const pos of positions) {
+        await enrichPositionWithApr(db, pos);
+      }
       
       // Calculate stats
       let totalValue = 0;

@@ -328,16 +328,16 @@ class DataCollector {
             results.push({
               asset,
               platform: 'OKX',
-              platformType: 'exchange',
+        platformType: 'exchange',
               chain: getChainForAsset(asset),
               apr: rate,
               apy: rate,
               minStake: 0,
               lockPeriod: 'Flexible',
-              riskLevel: 'low',
-              lastUpdated: new Date(),
+        riskLevel: 'low',
+        lastUpdated: new Date(),
               source: 'okx_simple_earn',
-              createdAt: new Date(),
+        createdAt: new Date(),
             });
           }
           console.log(`[OK] Got ${results.length} products from OKX Simple Earn balance`);
@@ -365,16 +365,16 @@ class DataCollector {
             results.push({
               asset,
               platform: 'OKX',
-              platformType: 'exchange',
+        platformType: 'exchange',
               chain: getChainForAsset(asset),
               apr,
               apy: apr,
               minStake: parseFloat(offer.minAmt || '0'),
               lockPeriod: offer.term === '0' ? 'Flexible' : `${offer.term} days`,
-              riskLevel: 'low',
-              lastUpdated: new Date(),
+        riskLevel: 'low',
+        lastUpdated: new Date(),
               source: 'okx_earn',
-              createdAt: new Date(),
+        createdAt: new Date(),
             });
           }
           console.log('[OK] Got staking offers from OKX');
@@ -434,17 +434,17 @@ class DataCollector {
             
             results.push({
               asset,
-              platform: 'Binance',
-              platformType: 'exchange',
+        platform: 'Binance',
+        platformType: 'exchange',
               chain: getChainForAsset(asset),
               apr,
               apy: apr,
               minStake: parseFloat(product.minPurchaseAmount || '0'),
               lockPeriod: 'Flexible',
-              riskLevel: 'low',
-              lastUpdated: new Date(),
+        riskLevel: 'low',
+        lastUpdated: new Date(),
               source: 'binance_simple_earn_flexible',
-              createdAt: new Date(),
+        createdAt: new Date(),
             });
           }
           console.log(`[OK] Got ${results.length} flexible products from Binance Simple Earn`);
@@ -483,17 +483,17 @@ class DataCollector {
             
             results.push({
               asset,
-              platform: 'Binance',
-              platformType: 'exchange',
+        platform: 'Binance',
+        platformType: 'exchange',
               chain: getChainForAsset(asset),
               apr,
               apy: apr,
               minStake: parseFloat(product.minPurchaseAmount || '0'),
               lockPeriod,
-              riskLevel: 'low',
-              lastUpdated: new Date(),
+        riskLevel: 'low',
+        lastUpdated: new Date(),
               source: 'binance_simple_earn_locked',
-              createdAt: new Date(),
+        createdAt: new Date(),
             });
           }
           console.log(`[OK] Got locked products from Binance Simple Earn`);
@@ -596,19 +596,19 @@ class DataCollector {
               results.push({
                 asset,
                 platform: 'KuCoin',
-                platformType: 'exchange',
+        platformType: 'exchange',
                 chain: getChainForAsset(asset),
                 apr,
                 apy: apr,
                 minStake: parseFloat(item.minDepositAmount || item.minStakeAmount || item.minAmount || '0'),
                 lockPeriod,
-                riskLevel: 'low',
-                lastUpdated: new Date(),
+        riskLevel: 'low',
+        lastUpdated: new Date(),
                 source: `kucoin_${endpoint.type}`,
-                createdAt: new Date(),
+        createdAt: new Date(),
               });
-            }
-            
+  }
+
             if (items.length > 0) {
               console.log(`[OK] Got ${items.length} items from KuCoin ${endpoint.type}`);
             }
@@ -693,9 +693,9 @@ class DataCollector {
                 minStake: parseFloat(product.minStakeAmount || '0'),
                 lockPeriod,
                 riskLevel: 'low',
-                lastUpdated: new Date(),
+        lastUpdated: new Date(),
                 source,
-                createdAt: new Date(),
+        createdAt: new Date(),
               });
             }
             const added = results.length - before;

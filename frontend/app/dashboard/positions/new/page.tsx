@@ -1,23 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const PLATFORMS = [
-  'Binance',
   'OKX',
   'KuCoin',
-  'Bybit',
-  'Kraken',
-  'Coinbase',
-  'Aave',
-  'Compound',
-  'Yearn',
-  'Lido',
+  'Binance',
 ];
 
 const POPULAR_ASSETS = [
@@ -39,7 +33,19 @@ export default function NewPositionPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [assetSearch, setAssetSearch] = useState('');
+  const [isAssetMenuOpen, setIsAssetMenuOpen] = useState(false);
+  const assetMenuBlur = useRef<NodeJS.Timeout | null>(null);
   const [aprData, setAprData] = useState<any[]>([]);
+  const assetsQuery = useQuery({
+    queryKey: ['assets-autocomplete', formData.platform],
+    queryFn: () =>
+      fetch(
+        `http://localhost:3001/api/apr/assets${formData.platform ? `?platform=${formData.platform}` : ''
+        }`
+      ).then((res) => res.json()),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -55,7 +61,7 @@ export default function NewPositionPage() {
         const res = await fetch('http://localhost:3001/api/apr');
         if (res.ok) {
           const data = await res.json();
-          setAprData(data);
+          setAprData(Array.isArray(data?.data) ? data.data : []);
         }
       } catch (err) {
         console.error('Failed to fetch APR data:', err);
@@ -64,24 +70,102 @@ export default function NewPositionPage() {
     fetchAprData();
   }, []);
 
+  const assetOptions = useMemo(() => {
+    const apiAssets = assetsQuery.data?.data || [];
+    const platformAssets = formData.platform
+      ? (aprData || []).filter(
+          (d) =>
+            d.platform &&
+            d.platform.toLowerCase() === formData.platform.toLowerCase()
+        )
+      : [];
+
+    const merged = new Map<string, string>();
+
+    if (Array.isArray(apiAssets)) {
+      apiAssets.forEach((a: any) => {
+        if (a?.symbol) merged.set(a.symbol.toUpperCase(), a.name || a.symbol);
+      });
+    }
+
+    platformAssets.forEach((d: any) => {
+      if (d?.asset) {
+        merged.set(d.asset.toUpperCase(), d.asset.toUpperCase());
+      }
+    });
+
+    if (merged.size === 0) {
+      return POPULAR_ASSETS.map((symbol) => ({
+        value: symbol,
+        label: symbol,
+      }));
+    }
+
+    return Array.from(merged.entries())
+      .map(([symbol, name]) => ({
+        value: symbol,
+        label: `${name} (${symbol})`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [assetsQuery.data, aprData, formData.platform]);
+
+  const filteredAssets = useMemo(() => {
+    const term = assetSearch.trim().toLowerCase();
+    if (!term) return assetOptions;
+    return assetOptions.filter(
+      (opt) =>
+        opt.value.toLowerCase().includes(term) ||
+        opt.label.toLowerCase().includes(term)
+    );
+  }, [assetOptions, assetSearch]);
+
   // Auto-fill APR when platform and asset are selected
   useEffect(() => {
-    if (formData.platform && formData.asset) {
-      const match = aprData.find(
-        (d) => 
-          d.platform.toLowerCase() === formData.platform.toLowerCase() &&
-          d.asset.toUpperCase() === formData.asset.toUpperCase()
-      );
-      if (match && !formData.entryApr) {
-        setFormData(prev => ({ ...prev, entryApr: match.apr.toString() }));
+    if (!formData.platform || !formData.asset) return;
+
+    const controller = new AbortController();
+
+    async function fetchAprForAsset() {
+      try {
+        const params = new URLSearchParams({
+          asset: formData.asset.toUpperCase(),
+          platform: formData.platform,
+          limit: '1',
+          order: 'desc',
+        });
+        const res = await fetch(`http://localhost:3001/api/apr?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const match = Array.isArray(data?.data) && data.data[0];
+        if (match) {
+          setFormData((prev) => ({
+            ...prev,
+            entryApr: match.apr?.toString() || prev.entryApr,
+          }));
+        }
+      } catch (err) {
+        if ((err as any).name === 'AbortError') return;
+        console.error('Failed to fetch APR for asset:', err);
       }
     }
-  }, [formData.platform, formData.asset, aprData]);
+
+    fetchAprForAsset();
+
+    return () => controller.abort();
+  }, [formData.platform, formData.asset]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
+    const validAsset = assetOptions.some((opt) => opt.value === formData.asset);
+    if (!validAsset) {
+      setError('Please select a valid asset from the list.');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const res = await fetch('http://localhost:3001/api/positions', {
@@ -159,19 +243,26 @@ export default function NewPositionPage() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Platform *
               </label>
+            <div className="relative">
               <select
                 value={formData.platform}
                 onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
               >
-                <option value="">Select a platform</option>
+              <option value="" disabled hidden />
                 {PLATFORMS.map((platform) => (
                   <option key={platform} value={platform}>
                     {platform}
                   </option>
                 ))}
               </select>
+              {!formData.platform && (
+                <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-gray-400 opacity-70">
+                  Select a platform
+                </span>
+              )}
+            </div>
             </div>
 
             {/* Asset */}
@@ -182,28 +273,53 @@ export default function NewPositionPage() {
               <div className="relative">
                 <input
                   type="text"
-                  value={formData.asset}
-                  onChange={(e) => setFormData({ ...formData, asset: e.target.value.toUpperCase() })}
-                  placeholder="e.g., ETH, BTC, USDT"
+                  value={assetSearch || formData.asset}
+                  onFocus={() => {
+                    if (!formData.platform) return;
+                    if (assetMenuBlur.current) clearTimeout(assetMenuBlur.current);
+                    setIsAssetMenuOpen(true);
+                  }}
+                  onBlur={() => {
+                    assetMenuBlur.current = setTimeout(() => setIsAssetMenuOpen(false), 120);
+                  }}
+                  onChange={(e) => {
+                    setAssetSearch(e.target.value.toUpperCase());
+                    setIsAssetMenuOpen(true);
+                  }}
+                  placeholder={
+                    formData.platform
+                      ? 'Select an asset from the list'
+                      : 'Select a platform first'
+                  }
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   required
+                  disabled={!formData.platform}
                 />
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {POPULAR_ASSETS.slice(0, 8).map((asset) => (
-                  <button
-                    key={asset}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, asset })}
-                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                      formData.asset === asset
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                    }`}
-                  >
-                    {asset}
-                  </button>
-                ))}
+                {isAssetMenuOpen && (
+                  <div className="absolute z-10 w-full max-h-48 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 divide-y divide-gray-800 shadow-lg mt-1">
+                    {filteredAssets.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">No assets found</div>
+                    ) : (
+                      filteredAssets.map((asset) => (
+                        <button
+                          key={asset.value}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setFormData({ ...formData, asset: asset.value });
+                            setAssetSearch('');
+                            setIsAssetMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm ${
+                            formData.asset === asset.value ? 'bg-emerald-500/10 text-emerald-300' : 'text-gray-200 hover:bg-gray-800'
+                          }`}
+                        >
+                          {asset.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -228,17 +344,18 @@ export default function NewPositionPage() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Entry APR (%) *
               </label>
-              <input
-                type="number"
-                step="any"
-                value={formData.entryApr}
-                onChange={(e) => setFormData({ ...formData, entryApr: e.target.value })}
-                placeholder="e.g., 5.5"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                required
-              />
+              {formData.entryApr ? (
+                <p className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white">
+                  {parseFloat(formData.entryApr).toFixed(2)}%
+                </p>
+              ) : (
+                <p className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-gray-500">
+                  Waiting for APR data...
+                </p>
+              )}
+              <input type="hidden" name="entryApr" value={formData.entryApr} />
               <p className="text-xs text-gray-500 mt-1">
-                This will auto-fill if we have data for your selected platform and asset.
+                APR auto-fills from the selected exchange/asset when available.
               </p>
             </div>
 

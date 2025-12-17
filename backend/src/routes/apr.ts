@@ -69,6 +69,29 @@ export async function aprRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Get distinct assets that have APR data (optionally filtered by platform)
+  fastify.get('/assets', async (request: FastifyRequest<{ Querystring: { platform?: string } }>, reply: FastifyReply) => {
+    try {
+      const { platform } = request.query;
+      const filter: any = {};
+      if (platform) {
+        filter.platform = { $regex: platform, $options: 'i' };
+      }
+      const assets = await aprCollection.distinct('asset', filter);
+      return {
+        success: true,
+        data: assets.map((a) => ({ symbol: a })),
+        count: assets.length,
+      };
+    } catch (error) {
+      reply.code(500);
+      return {
+        success: false,
+        error: 'Failed to fetch asset list',
+      };
+    }
+  });
+
   // Get APR data for a specific asset
   fastify.get('/asset/:asset', async (
     request: FastifyRequest<{
