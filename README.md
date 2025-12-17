@@ -2,62 +2,58 @@
 
 ## Project Overview
 
-**APR Finder** is a comprehensive web platform that helps cryptocurrency investors discover and compare staking and investment opportunities across multiple exchanges and DeFi protocols. The platform aggregates real-time Annual Percentage Rate (APR) data to help users make informed investment decisions.
+APR Finder is a comprehensive web platform that helps cryptocurrency investors discover and compare staking and investment opportunities across multiple exchanges and defi protocols. The platform collects real-time Annual Percentage Rate (APR) data to help users make informed investment decisions.
 
 ## The Problem We're Solving
 
 Currently, cryptocurrency investors face several challenges:
 
-- **Fragmented Information**: APR data is scattered across dozens of platforms
-- **Time-Consuming Research**: Investors must manually check multiple exchanges and DeFi protocols
-- **Missed Opportunities**: High-yield opportunities are often overlooked due to lack of visibility
-- **Risk Assessment**: Difficult to compare risks across different platforms
-- **Portfolio Tracking**: No unified way to track performance across multiple investments
+- Fragmented Information: APR data is scattered across dozens of platforms
+- Time-Consuming Research: Investors must manually check multiple exchanges and DeFi protocols
+- Missed Opportunities: High-yield opportunities are often overlooked due to lack of visibility
+- Risk Assessment: Difficult to compare risks across different platforms
+- Portfolio Tracking: No unified way to track performance across multiple investments
 
 ## Our Solution
 
 APR Finder provides a centralized platform that:
 
-### 🔍 **Comprehensive Discovery**
-- Aggregates APR data from major exchanges (Binance, Kraken) and DeFi protocols (Compound, Aave, Yearn)
-- Covers the top 20 cryptocurrencies by market cap
+- Collects APR data from major exchanges (Binance, Kraken, OKX) and DeFi protocols (Compound, Aave, Yearn)
 - Multi-chain support: Ethereum, BSC, Polygon, Solana, Avalanche
 - Real-time updates every 30 seconds to ensure current information
 
-### 📊 **Smart Comparison Tools**
+### Smart Comparison Tools
 - Side-by-side comparison of staking opportunities
 - Sortable tables by APR, risk level, platform type
-- Historical APR trends and volatility analysis
 - Risk scoring system for each platform
 
-### 📱 **User-Friendly Experience**
-- Clean, intuitive interface accessible on desktop and mobile
+### User-Friendly Experience
+- Clean interface accessible on desktop and mobile
 - Hybrid authentication: Traditional Web2 + Web3 wallet connection
 - No registration required for basic browsing
 - Optional portfolio tracking for registered users
-- Progressive Web App (PWA) for mobile users
 
-### 🎯 **Target Audience**
-- **Primary**: Individual crypto investors seeking yield opportunities
-- **Secondary**: Crypto enthusiasts exploring DeFi protocols
-- **Tertiary**: Financial advisors and crypto fund managers
+### Target Audience
+- Primary: Lazy individual crypto investors looking for opportunities
+- Secondary: Crypto enthusiasts exploring DeFi protocols
+- Tertiary: Financial advisors and crypto fund managers
 
 ## Key Features
 
 ### Phase 1 (MVP) - Core Platform
-- **APR Comparison Dashboard**: Real-time comparison of staking opportunities
-- **Asset Explorer**: Detailed pages for each supported cryptocurrency
-- **Platform Comparison**: Risk assessment and platform-specific information
-- **Web3 Integration**: Wallet connection and blockchain data display
-- **Multi-Chain Support**: Ethereum, BSC, Polygon, Solana ecosystems
-- **Mobile-Responsive Design**: Optimized for all devices
+- APR Comparison Dashboard: Real-time comparison of staking opportunities
+- Asset Explorer: Detailed pages for each supported cryptocurrency
+- Platform Comparison: Risk assessment and platform-specific information
+- Web3 Integration: Wallet connection and blockchain data display
+- Multi-Chain Support: Ethereum, BSC, Polygon, Solana ecosystems
+- Mobile-Responsive Design: Optimized for all devices
 
 ### Phase 2 - Enhanced Features
-- **Portfolio Tracking**: Monitor multiple staking positions (Web2 and Web3 separate initially)
-- **Alert System**: Notifications for APR changes and new opportunities
-- **Advanced Analytics**: Performance tracking and trend analysis
-- **Extended Platform Coverage**: Additional exchanges and DeFi protocols
-- **Cross-Chain Portfolio**: Unified view of multi-chain investments
+- Portfolio Tracking: Monitor multiple staking positions (Web2 and Web3 separate initially)
+- Alert System: Notifications for APR changes and new opportunities
+- Advanced Analytics: Performance tracking and trend analysis
+- Extended Platform Coverage: Additional exchanges and DeFi protocols
+- Cross-Chain Portfolio: Unified view of multi-chain investments
 
 ## Market Opportunity
 
