@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import { dataCollector } from './dataCollector';
+import { checkAlerts, cleanupOldNotifications } from './alertChecker';
+import { getDatabase } from '../config/database';
 
 /**
  * Scheduler Service
@@ -25,6 +27,20 @@ class Scheduler {
         if (result.errors.length > 0) {
           console.error('Errors:', result.errors);
         }
+
+        // Check alerts after data collection
+        try {
+          const db = getDatabase();
+          const aprData = await db.collection('apr_data').find({}).toArray();
+          const aprList = aprData.map(d => ({
+            platform: d.platform,
+            asset: d.asset,
+            apr: d.apr
+          }));
+          await checkAlerts(aprList);
+        } catch (alertError) {
+          console.error('[SCHEDULER] Error checking alerts:', alertError);
+        }
       } catch (error) {
         console.error('[ERROR] Scheduled data collection failed:', error);
       }
@@ -35,12 +51,38 @@ class Scheduler {
   }
 
   /**
+   * Start the notification cleanup scheduler
+   * Runs daily at midnight
+   */
+  startNotificationCleanup() {
+    const job = cron.schedule('0 0 * * *', async () => {
+      console.log('[SCHEDULER] Running notification cleanup...');
+      try {
+        await cleanupOldNotifications();
+      } catch (error) {
+        console.error('[SCHEDULER] Notification cleanup failed:', error);
+      }
+    });
+
+    this.jobs.set('notificationCleanup', job);
+    console.log('[SCHEDULER] Notification cleanup scheduler started (runs daily at midnight)');
+  }
+
+  /**
+   * Start all schedulers
+   */
+  startAll() {
+    this.startDataCollection();
+    this.startNotificationCleanup();
+  }
+
+  /**
    * Stop all scheduled jobs
    */
   stopAll() {
     this.jobs.forEach((job, name) => {
       job.stop();
-      console.log(`⏹️  Stopped scheduler: ${name}`);
+      console.log(`[SCHEDULER] Stopped: ${name}`);
     });
     this.jobs.clear();
   }

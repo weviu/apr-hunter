@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { TrendingUp, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 
 export function Header() {
   const { user, isLoading, logout } = useAuth();
@@ -45,6 +46,7 @@ export function Header() {
                   <span>Dashboard</span>
                 </Link>
                 <div className="flex items-center space-x-3 pl-4 border-l border-gray-700">
+                  <NotificationBell />
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
                       <User className="h-4 w-4 text-white" />

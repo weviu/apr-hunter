@@ -211,9 +211,13 @@ export function TopOpportunities() {
         <p>
           Data sourced from{' '}
           <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
-            OKX Earn
+            OKX
           </a>
-          . Real-time staking rates via authenticated API.
+          {' & '}
+          <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">
+            KuCoin
+          </a>
+          . Real-time rates via authenticated APIs.
         </p>
       </div>
     </div>

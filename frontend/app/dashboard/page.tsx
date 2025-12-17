@@ -38,10 +38,20 @@ interface PortfolioStats {
   positions: Position[];
 }
 
+interface Alert {
+  id: string;
+  asset: string;
+  platform: string;
+  alertType: 'above' | 'below';
+  threshold: number;
+  isActive: boolean;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading, token } = useAuth();
   const [stats, setStats] = useState<PortfolioStats | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
   // Redirect to login if not authenticated
@@ -51,10 +61,11 @@ export default function DashboardPage() {
     }
   }, [user, isLoading, router]);
 
-  // Fetch portfolio stats
+  // Fetch portfolio stats and alerts
   useEffect(() => {
     if (token) {
       fetchStats();
+      fetchAlerts();
     }
   }, [token]);
 
@@ -73,6 +84,22 @@ export default function DashboardPage() {
       console.error('Failed to fetch stats:', error);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/alerts', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setAlerts(data.alerts);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
     }
   };
 
@@ -175,17 +202,19 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+          <Link href="/dashboard/alerts" className="bg-gray-800 rounded-xl border border-gray-700 p-6 hover:border-gray-600 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Active Alerts</p>
-                <p className="text-2xl font-bold text-white mt-1">0</p>
+                <p className="text-2xl font-bold text-white mt-1">
+                  {alerts.filter(a => a.isActive).length}
+                </p>
               </div>
               <div className="p-3 bg-yellow-500/10 rounded-lg">
                 <Bell className="h-6 w-6 text-yellow-500" />
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Main Content Grid */}
@@ -300,21 +329,64 @@ export default function DashboardPage() {
               </div>
               
               <div className="p-6">
-                {/* Empty State */}
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Bell className="h-6 w-6 text-gray-500" />
+                {alerts.length === 0 ? (
+                  /* Empty State */
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Bell className="h-6 w-6 text-gray-500" />
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                      No alerts set up yet
+                    </p>
+                    <Link
+                      href="/dashboard/alerts/new"
+                      className="text-emerald-500 hover:text-emerald-400 text-sm mt-2 inline-block"
+                    >
+                      Create your first alert →
+                    </Link>
                   </div>
-                  <p className="text-gray-400 text-sm">
-                    No alerts set up yet
-                  </p>
-                  <Link
-                    href="/dashboard/alerts/new"
-                    className="text-emerald-500 hover:text-emerald-400 text-sm mt-2 inline-block"
-                  >
-                    Create your first alert →
-                  </Link>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {alerts.slice(0, 3).map((alert) => (
+                      <div
+                        key={alert.id}
+                        className={`p-3 bg-gray-700/50 rounded-lg ${!alert.isActive ? 'opacity-60' : ''}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-medium text-sm">{alert.asset}</p>
+                            <p className="text-xs text-gray-400">
+                              {alert.alertType === 'above' ? '↑' : '↓'} {alert.threshold}% on {alert.platform}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            alert.isActive 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : 'bg-gray-600 text-gray-400'
+                          }`}>
+                            {alert.isActive ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {alerts.length > 3 && (
+                      <Link
+                        href="/dashboard/alerts"
+                        className="block text-center text-sm text-emerald-500 hover:text-emerald-400 py-2"
+                      >
+                        View all {alerts.length} alerts →
+                      </Link>
+                    )}
+                    {alerts.length <= 3 && (
+                      <Link
+                        href="/dashboard/alerts"
+                        className="block text-center text-sm text-gray-500 hover:text-gray-400 py-2"
+                      >
+                        Manage alerts →
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
