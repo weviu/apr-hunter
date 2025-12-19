@@ -23,8 +23,13 @@ const fastify = Fastify({
 async function start() {
   try {
     // Register plugins
+    const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
+
     await fastify.register(cors, {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: allowedOrigins,
       credentials: true,
     });
 
@@ -56,7 +61,7 @@ async function start() {
     // Root route - API information
     fastify.get('/', async () => {
       return {
-        name: 'APR Finder API',
+        name: 'APR Hunter API',
         version: '1.0.0',
         status: 'running',
         endpoints: {

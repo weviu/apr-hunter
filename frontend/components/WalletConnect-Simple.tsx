@@ -4,7 +4,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 export function WalletConnect() {
   const { isConnected, address } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isLoading, pendingConnector } = useConnect();
   const { disconnect } = useDisconnect();
 
   if (isConnected && address) {
@@ -25,14 +25,21 @@ export function WalletConnect() {
 
   return (
     <div className="flex items-center space-x-2">
+      {!connectors.length && (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          No wallet connectors available
+        </span>
+      )}
       {connectors.map((connector) => (
         <button
           key={connector.id}
           onClick={() => connect({ connector })}
-          disabled={isPending}
+          disabled={isLoading && pendingConnector?.id === connector.id}
           className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? 'Connecting...' : `Connect ${connector.name}`}
+          {isLoading && pendingConnector?.id === connector.id
+            ? 'Connecting...'
+            : `Connect ${connector.name}`}
         </button>
       ))}
     </div>

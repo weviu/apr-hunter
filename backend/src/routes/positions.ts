@@ -74,10 +74,15 @@ export async function positionRoutes(fastify: FastifyInstance) {
       const db = getDatabase();
       const userId = (request as any).user.userId;
       
-      const positions = await db
+      const positionsRaw = await db
         .collection('positions')
         .find({ userId, status: 'active' })
-        .toArray() as PositionDocument[];
+        .toArray();
+
+      const positions: PositionDocument[] = positionsRaw.map((pos) => ({
+        ...(pos as any),
+        _id: pos._id?.toString?.() ?? String(pos._id),
+      }));
 
       const assets = Array.from(new Set(positions.map((p) => p.asset.toUpperCase())));
       const priceMap = await fetchAssetPrices(assets);

@@ -644,7 +644,8 @@ class DataCollector {
         console.log('[INFO] Skipping Kraken due to temporary lockout backoff');
         return results;
       }
-      if (!KRAKEN_API_KEY || !KRAKEN_SECRET_KEY) {
+      const creds = getKrakenCredentials();
+      if (!creds.apiKey || !creds.secretKey) {
         console.warn('[WARN] Kraken API credentials not configured, skipping Kraken');
         return results;
       }

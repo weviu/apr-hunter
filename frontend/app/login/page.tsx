@@ -38,7 +38,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-2">
             <TrendingUp className="h-10 w-10 text-emerald-500" />
-            <span className="text-3xl font-bold text-white">APR Finder</span>
+            <span className="text-3xl font-bold text-white">APR Hunter</span>
           </Link>
           <p className="mt-2 text-gray-400">Sign in to track your portfolio</p>
         </div>

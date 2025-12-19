@@ -1,7 +1,7 @@
 {
   "name": "apr-finder-backend",
   "version": "1.0.0",
-  "description": "APR Finder Backend API",
+  "description": "APR Hunter Backend API",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts --ext ts,json",
