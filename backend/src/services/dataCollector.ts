@@ -20,23 +20,34 @@ interface DataSource {
   fetch: () => Promise<AprDataDocument[]>;
 }
 
+// Helper to get env vars at runtime (not module load time)
+const getEnv = (key: string) => process.env[key] || '';
+
 // OKX API credentials from environment
-const OKX_API_KEY = process.env.OKX_API_KEY || '';
-const OKX_SECRET_KEY = process.env.OKX_SECRET_KEY || '';
-const OKX_PASSPHRASE = process.env.OKX_PASSPHRASE || '';
+const getOKXCredentials = () => ({
+  apiKey: getEnv('OKX_API_KEY'),
+  secretKey: getEnv('OKX_SECRET_KEY'),
+  passphrase: getEnv('OKX_PASSPHRASE'),
+});
 
 // Binance API credentials from environment
-const BINANCE_API_KEY = process.env.BINANCE_API_KEY || '';
-const BINANCE_SECRET_KEY = process.env.BINANCE_SECRET_KEY || '';
+const getBinanceCredentials = () => ({
+  apiKey: getEnv('BINANCE_API_KEY'),
+  secretKey: getEnv('BINANCE_SECRET_KEY'),
+});
 
 // KuCoin API credentials from environment
-const KUCOIN_API_KEY = process.env.KUCOIN_API_KEY || '';
-const KUCOIN_SECRET_KEY = process.env.KUCOIN_SECRET_KEY || '';
-const KUCOIN_PASSPHRASE = process.env.KUCOIN_PASSPHRASE || '';
+const getKuCoinCredentials = () => ({
+  apiKey: getEnv('KUCOIN_API_KEY'),
+  secretKey: getEnv('KUCOIN_SECRET_KEY'),
+  passphrase: getEnv('KUCOIN_PASSPHRASE'),
+});
 
 // Kraken API credentials (required for private staking endpoints)
-const KRAKEN_API_KEY = process.env.KRAKEN_API_KEY || '';
-const KRAKEN_SECRET_KEY = process.env.KRAKEN_SECRET_KEY || '';
+const getKrakenCredentials = () => ({
+  apiKey: getEnv('KRAKEN_API_KEY'),
+  secretKey: getEnv('KRAKEN_SECRET_KEY'),
+});
 
 // Helper to make HTTP requests with timeout
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 15000): Promise<Response> {
@@ -64,7 +75,7 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
 // OKX API signature generation
 function generateOKXSignature(timestamp: string, method: string, requestPath: string, body: string = ''): string {
   const message = timestamp + method + requestPath + body;
-  return crypto.createHmac('sha256', OKX_SECRET_KEY).update(message).digest('base64');
+  return crypto.createHmac('sha256', getOKXCredentials().secretKey).update(message).digest('base64');
 }
 
 // Make authenticated OKX API request
@@ -72,12 +83,13 @@ async function okxAuthenticatedRequest(endpoint: string, method: string = 'GET',
   const timestamp = new Date().toISOString();
   const bodyStr = body ? JSON.stringify(body) : '';
   const signature = generateOKXSignature(timestamp, method, endpoint, bodyStr);
+  const creds = getOKXCredentials();
   
   const headers: Record<string, string> = {
-    'OK-ACCESS-KEY': OKX_API_KEY,
+    'OK-ACCESS-KEY': creds.apiKey,
     'OK-ACCESS-SIGN': signature,
     'OK-ACCESS-TIMESTAMP': timestamp,
-    'OK-ACCESS-PASSPHRASE': OKX_PASSPHRASE,
+    'OK-ACCESS-PASSPHRASE': creds.passphrase,
     'Content-Type': 'application/json',
   };
   
@@ -99,7 +111,7 @@ async function okxAuthenticatedRequest(endpoint: string, method: string = 'GET',
 
 // Binance API signature generation
 function generateBinanceSignature(queryString: string): string {
-  return crypto.createHmac('sha256', BINANCE_SECRET_KEY).update(queryString).digest('hex');
+  return crypto.createHmac('sha256', getBinanceCredentials().secretKey).update(queryString).digest('hex');
 }
 
 // Make authenticated Binance API request
@@ -118,7 +130,7 @@ async function binanceAuthenticatedRequest(endpoint: string, params: Record<stri
   const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: {
-      'X-MBX-APIKEY': BINANCE_API_KEY,
+      'X-MBX-APIKEY': getBinanceCredentials().apiKey,
     },
   });
   
@@ -133,12 +145,13 @@ async function binanceAuthenticatedRequest(endpoint: string, params: Record<stri
 // KuCoin API signature generation
 function generateKuCoinSignature(timestamp: string, method: string, endpoint: string, body: string = ''): string {
   const message = timestamp + method + endpoint + body;
-  return crypto.createHmac('sha256', KUCOIN_SECRET_KEY).update(message).digest('base64');
+  return crypto.createHmac('sha256', getKuCoinCredentials().secretKey).update(message).digest('base64');
 }
 
 // KuCoin passphrase encryption
 function encryptKuCoinPassphrase(): string {
-  return crypto.createHmac('sha256', KUCOIN_SECRET_KEY).update(KUCOIN_PASSPHRASE).digest('base64');
+  const creds = getKuCoinCredentials();
+  return crypto.createHmac('sha256', creds.secretKey).update(creds.passphrase).digest('base64');
 }
 
 // Make authenticated KuCoin API request
@@ -149,7 +162,7 @@ async function kucoinAuthenticatedRequest(endpoint: string, method: string = 'GE
   const passphrase = encryptKuCoinPassphrase();
   
   const headers: Record<string, string> = {
-    'KC-API-KEY': KUCOIN_API_KEY,
+    'KC-API-KEY': getKuCoinCredentials().apiKey,
     'KC-API-SIGN': signature,
     'KC-API-TIMESTAMP': timestamp,
     'KC-API-PASSPHRASE': passphrase,
@@ -175,7 +188,8 @@ async function kucoinAuthenticatedRequest(endpoint: string, method: string = 'GE
 
 // Make authenticated Kraken API request (private)
 async function krakenAuthenticatedRequest(path: string, params: Record<string, string | number> = {}): Promise<any> {
-  if (!KRAKEN_API_KEY || !KRAKEN_SECRET_KEY) {
+  const creds = getKrakenCredentials();
+  if (!creds.apiKey || !creds.secretKey) {
     throw new Error('Kraken API credentials not configured');
   }
 
@@ -183,14 +197,14 @@ async function krakenAuthenticatedRequest(path: string, params: Record<string, s
   const body = new URLSearchParams({ nonce, ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])) }).toString();
 
   const sha256 = crypto.createHash('sha256').update(nonce + body).digest();
-  const hmac = crypto.createHmac('sha512', Buffer.from(KRAKEN_SECRET_KEY, 'base64'))
+  const hmac = crypto.createHmac('sha512', Buffer.from(creds.secretKey, 'base64'))
     .update(path + sha256)
     .digest('base64');
 
   const response = await fetchWithTimeout(`https://api.kraken.com${path}`, {
     method: 'POST',
     headers: {
-      'API-Key': KRAKEN_API_KEY,
+      'API-Key': creds.apiKey,
       'API-Sign': hmac,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
@@ -291,9 +305,10 @@ class DataCollector {
     const results: AprDataDocument[] = [];
     
     // Check if API credentials are configured
-    if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
-      console.log('[WARN] OKX API credentials not configured, using public API fallback');
-      return this.fetchOKXPublicData();
+    const creds = getOKXCredentials();
+    if (!creds.apiKey || !creds.secretKey || !creds.passphrase) {
+      console.log('[WARN] OKX API credentials not configured, skipping OKX');
+      return results;
     }
     
     try {
@@ -389,7 +404,8 @@ class DataCollector {
     const results: AprDataDocument[] = [];
     
     // Check if API credentials are configured
-    if (!BINANCE_API_KEY || !BINANCE_SECRET_KEY) {
+    const creds = getBinanceCredentials();
+    if (!creds.apiKey || !creds.secretKey) {
       console.log('[WARN] Binance API credentials not configured, skipping Binance');
       return results;
     }
@@ -507,7 +523,8 @@ class DataCollector {
     const results: AprDataDocument[] = [];
     
     // Check if API credentials are configured
-    if (!KUCOIN_API_KEY || !KUCOIN_SECRET_KEY || !KUCOIN_PASSPHRASE) {
+    const creds = getKuCoinCredentials();
+    if (!creds.apiKey || !creds.secretKey || !creds.passphrase) {
       console.log('[WARN] KuCoin API credentials not configured, skipping KuCoin');
       return results;
     }
