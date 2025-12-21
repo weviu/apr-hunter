@@ -4,17 +4,13 @@
   "description": "APR Hunter - Crypto Investment Platform",
   "private": true,
   "workspaces": [
-    "backend",
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -k -n backend,frontend -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "dev:backend": "npm run dev --prefix backend",
+    "dev": "concurrently -k -n frontend,worker -c green,magenta \"pnpm --filter apr-finder-frontend dev\" \"pnpm -C frontend run worker\"",
     "dev:frontend": "npm run dev --prefix frontend",
-    "build": "pnpm run build:backend && pnpm run build:frontend",
-    "build:backend": "pnpm --filter apr-finder-backend build",
-    "build:frontend": "pnpm --filter apr-finder-frontend build",
-    "start": "concurrently -k -n backend,frontend -c blue,green \"pnpm --filter apr-finder-backend start\" \"pnpm --filter apr-finder-frontend exec next start --hostname 0.0.0.0 --port 3000\"",
+    "build": "pnpm --filter apr-finder-frontend build",
+    "start": "pnpm --filter apr-finder-frontend start",
     "install:all": "pnpm install"
   },
   "devDependencies": {
@@ -23,6 +19,8 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "mongodb": "^7.0.0"
   }
 }
-

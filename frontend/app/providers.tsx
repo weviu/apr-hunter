@@ -2,30 +2,20 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiConfig, createConfig, configureChains } from 'wagmi';
-import { RainbowKitProvider, getDefaultWallets } from '@rainbow-me/rainbowkit';
+import { WagmiConfig } from 'wagmi';
+import { RainbowKitProvider, getDefaultWallets, getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, polygon, bsc, optimism, arbitrum, base, sepolia } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
 import { AuthProvider } from '@/lib/auth';
 import '@rainbow-me/rainbowkit/styles.css';
 
-// Configure chains with public provider
-const { chains, publicClient } = configureChains(
-  [mainnet, polygon, bsc, optimism, arbitrum, base, sepolia],
-  [publicProvider()]
-);
+const chains = [mainnet, polygon, bsc, optimism, arbitrum, base, sepolia];
 
-// Get default wallets
-const { connectors } = getDefaultWallets({
+// Use RainbowKit helper to build a Wagmi config without manual providers.
+const wagmiConfig = getDefaultConfig({
   appName: 'APR Hunter',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id',
   chains,
-});
-
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
+  ssr: true,
 });
 
 function Web3Provider({ children }: { children: ReactNode }) {
