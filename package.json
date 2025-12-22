@@ -7,7 +7,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -k -n frontend,worker -c green,magenta \"pnpm --filter apr-finder-frontend dev\" \"pnpm -C frontend run worker\"",
+    "dev": "node scripts/dev.js",
     "dev:frontend": "npm run dev --prefix frontend",
     "build": "pnpm --filter apr-finder-frontend build",
     "start": "pnpm --filter apr-finder-frontend start",
@@ -21,6 +21,10 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "mongodb": "^7.0.0"
+    "@base-org/account": "^2.5.1",
+    "@coinbase/wallet-sdk": "^4.3.7",
+    "@gemini-wallet/core": "^0.3.2",
+    "mongodb": "^7.0.0",
+    "porto": "^0.2.37"
   }
 }

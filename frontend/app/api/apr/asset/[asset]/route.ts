@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/server/db';
 import { AprDataDocument } from '@/lib/server/models/AprData';
+import { filterSampleAprData } from '@/lib/server/data/sampleAprData';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,14 @@ export async function GET(req: NextRequest, { params }: { params: { asset: strin
     const db = await getDb();
     const aprCollection = db.collection<AprDataDocument>('apr_data');
 
-    const results = await aprCollection
+    let results = await aprCollection
       .find({ asset: params.asset.toUpperCase() })
       .sort({ apr: -1 })
       .toArray();
+
+    if (results.length === 0) {
+      results = filterSampleAprData({ assets: [params.asset.toUpperCase()] }).map((item) => ({ ...item }));
+    }
 
     let history: any = null;
     if (includeHistory) {

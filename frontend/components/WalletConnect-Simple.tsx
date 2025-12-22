@@ -1,10 +1,12 @@
 'use client';
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi';
+import type { Connector } from 'wagmi';
 
 export function WalletConnect() {
   const { isConnected, address } = useAccount();
-  const { connect, connectors, isLoading, pendingConnector } = useConnect();
+  const connectors = useConnectors() as Connector[];
+  const { connect, isPending, variables } = useConnect();
   const { disconnect } = useDisconnect();
 
   if (isConnected && address) {
@@ -30,18 +32,21 @@ export function WalletConnect() {
           No wallet connectors available
         </span>
       )}
-      {connectors.map((connector) => (
-        <button
-          key={connector.id}
-          onClick={() => connect({ connector })}
-          disabled={isLoading && pendingConnector?.id === connector.id}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading && pendingConnector?.id === connector.id
-            ? 'Connecting...'
-            : `Connect ${connector.name}`}
-        </button>
-      ))}
+      {connectors.map((connector) => {
+        const pendingConnectorId = (variables?.connector as Connector | undefined)?.id;
+        const isConnectorPending = isPending && pendingConnectorId === connector.id;
+
+        return (
+          <button
+            key={connector.id}
+            onClick={() => connect({ connector })}
+            disabled={isConnectorPending}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isConnectorPending ? 'Connecting...' : `Connect ${connector.name}`}
+          </button>
+        );
+      })}
     </div>
   );
 }

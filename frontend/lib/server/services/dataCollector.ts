@@ -787,7 +787,7 @@ class DataCollector {
    * Collect data from all sources
    */
   async collectAll(): Promise<{ success: number; failed: number; errors: string[] }> {
-    const db = getDb();
+    const db = await getDb();
     const aprCollection = db.collection<AprDataDocument>('apr_data');
     const historyCollection = db.collection('apr_history');
 

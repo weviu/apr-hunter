@@ -1,43 +1,40 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiConfig, createConfig, configureChains } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
-import { MetaMaskConnector } from 'wagmi/connectors/metaMask';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { injected, metaMask } from 'wagmi/connectors';
 import { mainnet, polygon, bsc, optimism, arbitrum, base, sepolia } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
+import type { Chain } from 'viem/chains';
 
-// Configure chains and providers for wagmi v1
-// This works without WalletConnect Project ID - perfect for ConnectWallet.network or direct connections
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [mainnet, polygon, bsc, optimism, arbitrum, base, sepolia],
-  [publicProvider()]
-);
+const chains = [mainnet, polygon, bsc, optimism, arbitrum, base, sepolia] as const satisfies readonly [
+  Chain,
+  ...Chain[]
+];
 
-// Create wagmi client with injected connectors
+const transports = Object.fromEntries(chains.map((chain) => [chain.id, http()])) as Record<
+  number,
+  ReturnType<typeof http>
+>;
+
 const client = createConfig({
-  autoConnect: true,
+  ssr: true,
+  chains,
+  transports,
   connectors: [
-    new InjectedConnector({
-      chains,
+    injected({
+      target: 'metaMask',
     }),
-    new MetaMaskConnector({
-      chains,
-    }),
+    metaMask(),
   ],
-  publicClient,
-  webSocketPublicClient,
 });
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiConfig config={client}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </WagmiConfig>
+    <WagmiProvider config={client}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

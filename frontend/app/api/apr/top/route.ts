@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/server/db';
 import { AprDataDocument } from '@/lib/server/models/AprData';
+import { filterSampleAprData } from '@/lib/server/data/sampleAprData';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +19,20 @@ export async function GET(req: NextRequest) {
     if (chain) query.chain = chain.toLowerCase();
     if (platformType) query.platformType = platformType;
 
-    const results = await aprCollection
+    let results = await aprCollection
       .find(query)
       .sort({ apr: -1 })
       .limit(limit)
       .toArray();
+
+    if (results.length === 0) {
+      const fallback = filterSampleAprData({
+        chain,
+        platformType: platformType || undefined,
+        limit,
+      });
+      results = fallback.map((item) => ({ ...item }));
+    }
 
     return NextResponse.json({
       success: true,

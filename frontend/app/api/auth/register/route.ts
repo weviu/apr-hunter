@@ -18,8 +18,10 @@ function toSafeUser(user: UserDocument): SafeUser {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
+    console.log('[Register] Incoming payload', body ? { ...body, password: body.password ? '[redacted]' : undefined } : body);
     const validationResult = RegisterSchema.safeParse(body);
     if (!validationResult.success) {
+      console.warn('[Register] Validation failed', validationResult.error.flatten());
       return NextResponse.json(
         {
           success: false,

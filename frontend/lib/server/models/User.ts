@@ -1,21 +1,37 @@
 import { z } from 'zod';
 
+const emailSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim() : value),
+  z.string().email('Invalid email address')
+);
+
 export const UserSchema = z.object({
-  email: z.string().email(),
+  email: emailSchema,
   password: z.string().min(6),
   name: z.string().min(2).optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 
+const optionalNameSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? undefined : trimmed;
+  },
+  z.string().min(2, 'Name must be at least 2 characters').optional()
+);
+
 export const RegisterSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: emailSchema,
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  name: optionalNameSchema,
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: emailSchema,
   password: z.string().min(1, 'Password is required'),
 });
 

@@ -4,12 +4,17 @@ import { config as loadEnv } from 'dotenv';
 // Load .env.local first (to match Next dev), then fallback to .env
 loadEnv({ path: path.join(process.cwd(), '.env.local') });
 loadEnv();
-import { getDb } from '../lib/server/db';
-import { scheduler } from '../lib/server/services/scheduler';
-import { dataCollector } from '../lib/server/services/dataCollector';
-import { runtimeEnv } from '../lib/server/env';
 
 async function main() {
+  // Dynamically import modules after env vars are loaded so they
+  // pick up the correct connection settings (needed outside Next).
+  const [{ getDb }, { scheduler }, { dataCollector }, { runtimeEnv }] = await Promise.all([
+    import('../lib/server/db'),
+    import('../lib/server/services/scheduler'),
+    import('../lib/server/services/dataCollector'),
+    import('../lib/server/env'),
+  ]);
+
   await getDb();
 
   if (!runtimeEnv.ENABLE_DATA_COLLECTION) {

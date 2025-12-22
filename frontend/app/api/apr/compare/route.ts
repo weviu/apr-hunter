@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/server/db';
 import { AprDataDocument } from '@/lib/server/models/AprData';
+import { filterSampleAprData } from '@/lib/server/data/sampleAprData';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,10 +29,18 @@ export async function POST(req: NextRequest) {
       query.chain = chain.toLowerCase();
     }
 
-    const results = await aprCollection
+    let results = await aprCollection
       .find(query)
       .sort({ asset: 1, apr: -1 })
       .toArray();
+
+    if (results.length === 0) {
+      const fallback = filterSampleAprData({
+        assets,
+        chain,
+      });
+      results = fallback.map((item) => ({ ...item }));
+    }
 
     const grouped = results.reduce((acc, item) => {
       if (!acc[item.asset]) {
