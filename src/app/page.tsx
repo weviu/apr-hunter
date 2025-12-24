@@ -1,10 +1,15 @@
+'use client';
+
 import { Zap, TrendingUp, Database, ArrowRight } from 'lucide-react';
 import { AprComparison } from '@/components/apr-comparison';
 import { TopOpportunities } from '@/components/top-opportunities';
 import { Header } from '@/components/Header';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth';
 
 export default function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Header */}
@@ -47,12 +52,21 @@ export default function Home() {
                 View Top Rates
                 <ArrowRight className="h-5 w-5" />
               </a>
-              <Link
-                href="/dashboard"
-                className="px-8 py-3 rounded-lg border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white font-semibold transition-colors"
-              >
-                Go to Dashboard
-              </Link>
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="px-8 py-3 rounded-lg border border-gray-600 hover:border-emerald-500 text-gray-300 hover:text-white font-semibold transition-colors"
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/register"
+                  className="px-8 py-3 rounded-lg border border-emerald-500 hover:border-emerald-500 text-gray-300 hover:text-white font-semibold transition-colors"
+                >
+                  Sign Up
+                </Link>
+              )}
             </div>
 
             {/* Stats */}

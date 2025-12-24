@@ -41,7 +41,8 @@ export async function getTopAprOpportunities(limit = 10) {
   if (!db) return [];
 
   const pipeline = [
-    { $sort: { apr: -1, fetchedAt: -1 } },
+    // Prefer freshest data first, then highest apr
+    { $sort: { fetchedAt: -1, apr: -1 } },
     {
       $group: {
         _id: { platform: '$platform', symbol: '$symbol' },

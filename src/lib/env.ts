@@ -18,6 +18,7 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .optional(),
+  ALERT_EVAL_SECRET: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -35,4 +36,5 @@ export const env: Env = envSchema.parse({
   KUCOIN_API_SECRET: process.env.KUCOIN_API_SECRET,
   KUCOIN_PASSPHRASE: process.env.KUCOIN_PASSPHRASE,
   ENABLE_LIVE_EXCHANGE_FETCH: process.env.ENABLE_LIVE_EXCHANGE_FETCH ?? 'false',
+  ALERT_EVAL_SECRET: process.env.ALERT_EVAL_SECRET,
 });

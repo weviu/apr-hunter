@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Sora } from 'next/font/google';
 import './globals.css';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
+import { AuthProvider } from '@/lib/auth';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sora.variable} font-body antialiased`}>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <AuthProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

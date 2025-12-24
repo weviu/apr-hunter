@@ -33,6 +33,13 @@ function getKucoinCredentials(): KucoinCredentials {
   };
 }
 
+function getBinanceCredentials() {
+  return {
+    apiKey: env.BINANCE_API_KEY,
+    secretKey: env.BINANCE_API_SECRET,
+  };
+}
+
 function generateOkxSignature(timestamp: string, method: HttpMethod, requestPath: string, body = '') {
   const message = timestamp + method + requestPath + body;
   return crypto.createHmac('sha256', getOkxCredentials().secretKey || '').update(message).digest('base64');
@@ -75,7 +82,20 @@ function generateKucoinSignature(timestamp: string, method: HttpMethod, endpoint
 
 function encryptKucoinPassphrase() {
   const creds = getKucoinCredentials();
-  return crypto.createHmac('sha256', creds.secretKey || '').update(creds.passphrase || '').digest('base64');
+  const raw = creds.passphrase || '';
+  // If passphrase appears base64-encoded, decode before hashing (helps when users store the encoded value)
+  let decoded = raw;
+  try {
+    const buf = Buffer.from(raw, 'base64');
+    // Heuristic: if decoding changes the string and is printable, use it
+    const text = buf.toString('utf8');
+    if (text && text !== raw && /^[\x20-\x7E]+$/.test(text)) {
+      decoded = text;
+    }
+  } catch {
+    decoded = raw;
+  }
+  return crypto.createHmac('sha256', creds.secretKey || '').update(decoded).digest('base64');
 }
 
 async function kucoinAuthenticatedRequest<T>(endpoint: string, method: HttpMethod = 'GET', body?: object): Promise<T> {
@@ -110,6 +130,36 @@ async function kucoinAuthenticatedRequest<T>(endpoint: string, method: HttpMetho
   return response.json() as Promise<T>;
 }
 
+function generateBinanceSignature(queryString: string) {
+  return crypto.createHmac('sha256', getBinanceCredentials().secretKey || '').update(queryString).digest('hex');
+}
+
+async function binanceAuthenticatedRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+  const creds = getBinanceCredentials();
+  if (!creds.apiKey || !creds.secretKey) {
+    throw new Error('Binance credentials missing');
+  }
+
+  const timestamp = Date.now().toString();
+  const queryParams = new URLSearchParams({ ...params, timestamp });
+  const signature = generateBinanceSignature(queryParams.toString());
+  queryParams.append('signature', signature);
+
+  const response = await fetch(`https://api.binance.com${endpoint}?${queryParams.toString()}`, {
+    method: 'GET',
+    headers: {
+      'X-MBX-APIKEY': creds.apiKey,
+    },
+  });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Binance API error ${response.status}: ${err}`);
+    }
+
+  return response.json() as Promise<T>;
+}
+
 type Connector = {
   id: string;
   label: string;
@@ -125,9 +175,17 @@ const connectors: Connector[] = [
   { id: 'yearn', label: 'Yearn Vaults', fetcher: () => fetchStaticByPlatform('Yearn') },
 ];
 
+function stampFresh(items: AprOpportunity[]): AprOpportunity[] {
+  const now = new Date().toISOString();
+  return items.map((row) => ({
+    ...row,
+    lastUpdated: now,
+  }));
+}
+
 export async function fetchAllAprOpportunities(): Promise<AprOpportunity[]> {
   if (env.ENABLE_LIVE_EXCHANGE_FETCH !== 'true') {
-    return sampleAprData;
+    return stampFresh(sampleAprData);
   }
 
   const responses = await Promise.allSettled(connectors.map((connector) => connector.fetcher()));
@@ -145,10 +203,12 @@ export async function fetchAllAprOpportunities(): Promise<AprOpportunity[]> {
   }
 
   if (live.length === 0) {
-    return sampleAprData;
+    return stampFresh(sampleAprData);
   }
 
-  return live;
+  // Always stamp freshness so the UI reflects the latest fetch time even if sources report older timestamps
+  const stamped = stampFresh(live);
+  return stamped;
 }
 
 export async function fetchAprBySymbol(symbol: string) {
@@ -171,66 +231,120 @@ export async function listSupportedAssets() {
 }
 
 async function fetchBinanceAprs(): Promise<AprOpportunity[]> {
-  if (!env.BINANCE_API_KEY || !env.BINANCE_API_SECRET) {
+  const creds = getBinanceCredentials();
+  if (!creds.apiKey || !creds.secretKey) {
     return fetchStaticByPlatform('Binance');
   }
 
-  const query = new URLSearchParams({
-    product: 'STAKING',
-    status: 'ALL',
-    timestamp: Date.now().toString(),
-  });
+  const results: AprOpportunity[] = [];
 
-  const signature = crypto
-    .createHmac('sha256', env.BINANCE_API_SECRET)
-    .update(query.toString())
-    .digest('hex');
-  query.append('signature', signature);
+  // Flexible Simple Earn
+  try {
+    const flexible = await binanceAuthenticatedRequest<{
+      rows: {
+        asset: string;
+        latestAnnualPercentageRate?: string;
+        avgAnnualPercentageRate?: string;
+        minPurchaseAmount?: string;
+      }[];
+    }>('/sapi/v1/simple-earn/flexible/list', { size: '100' });
 
-  const response = await fetch(`https://api.binance.com/sapi/v1/staking/productList?${query.toString()}`, {
-    headers: {
-      'X-MBX-APIKEY': env.BINANCE_API_KEY,
-    },
-    cache: 'no-store',
-  });
+    if (Array.isArray(flexible?.rows)) {
+      for (const product of flexible.rows) {
+        const asset = (product.asset || '').toUpperCase();
+        if (!asset) continue;
 
-  if (!response.ok) {
-    throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
+        const apr = parseFloat(product.latestAnnualPercentageRate || product.avgAnnualPercentageRate || '0') * 100;
+        if (Number.isNaN(apr) || apr <= 0) continue;
+
+        const existingIndex = results.findIndex((r) => r.asset === asset && r.lockPeriod === 'Flexible');
+        if (existingIndex >= 0 && results[existingIndex].apr >= apr) continue;
+        if (existingIndex >= 0) results.splice(existingIndex, 1);
+
+        results.push({
+          id: `binance-flex-${asset}`,
+          symbol: asset,
+          asset,
+          platform: 'Binance',
+          platformType: 'exchange',
+          chain: getChainForAsset(asset),
+          apr,
+          apy: apr,
+          minStake: parseFloat(product.minPurchaseAmount || '0'),
+          lockPeriod: 'Flexible',
+          riskLevel: 'low',
+          source: 'binance_simple_earn_flexible',
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    // ignore and continue to locked
   }
 
-  type BinanceProduct = {
-    projectId: string;
-    asset: string;
-    rewardAsset: string;
-    duration: number;
-    apr: string;
-    status: string;
-    deliveryAnnualInterestRate: string;
-    redeemPeriod: number;
-    productId: string;
-  };
+  // Locked Simple Earn
+  try {
+    const locked = await binanceAuthenticatedRequest<{
+      rows: {
+        asset: string;
+        duration?: number;
+        minPurchaseAmount?: string;
+        apy?: string;
+        detail?: { apy?: string; annualPercentageRate?: string }[];
+      }[];
+    }>('/sapi/v1/simple-earn/locked/list', { size: '100' });
 
-  const body = (await response.json()) as BinanceProduct[];
-  return body
-    .filter((product) => product.status === 'SUBSCRIBABLE')
-    .map((product) => ({
-      id: `binance-${product.projectId || product.productId}`,
-      symbol: product.asset.toUpperCase(),
-      asset: product.asset.toUpperCase(),
-      platform: 'Binance',
-      platformType: 'exchange',
-      chain: 'BSC',
-      apr: parseFloat(product.apr || product.deliveryAnnualInterestRate || '0') * 100,
-      apy: parseFloat(product.deliveryAnnualInterestRate || product.apr || '0') * 100,
-      lockPeriod: product.duration > 0 ? `${product.duration} Days` : 'Flexible',
-      riskLevel: product.duration > 30 ? 'medium' : 'low',
-      source: 'Binance Simple Earn',
-      lastUpdated: new Date().toISOString(),
-    }));
+    if (Array.isArray(locked?.rows)) {
+      for (const product of locked.rows) {
+        const asset = (product.asset || '').toUpperCase();
+        if (!asset) continue;
+
+        let apr = 0;
+        if (Array.isArray(product.detail)) {
+          for (const tier of product.detail) {
+            const tierApr = parseFloat(tier.apy || tier.annualPercentageRate || '0') * 100;
+            if (!Number.isNaN(tierApr) && tierApr > apr) apr = tierApr;
+          }
+        }
+        if (apr <= 0) {
+          const fallback = parseFloat(product.apy || '0') * 100;
+          if (!Number.isNaN(fallback) && fallback > apr) apr = fallback;
+        }
+        if (apr <= 0) continue;
+
+        const duration = product.duration || 'Locked';
+        const lockPeriod = typeof duration === 'number' ? `${duration} days` : `${duration}`;
+
+        results.push({
+          id: `binance-locked-${asset}-${lockPeriod}`,
+          symbol: asset,
+          asset,
+          platform: 'Binance',
+          platformType: 'exchange',
+          chain: getChainForAsset(asset),
+          apr,
+          apy: apr,
+          minStake: parseFloat(product.minPurchaseAmount || '0'),
+          lockPeriod,
+          riskLevel: 'low',
+          source: 'binance_simple_earn_locked',
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  if (results.length === 0) {
+    return [];
+  }
+
+  return results;
 }
 
 async function fetchStaticByPlatform(platform: string): Promise<AprOpportunity[]> {
-  return sampleAprData.filter((row) => row.platform === platform);
+  return stampFresh(sampleAprData.filter((row) => row.platform === platform));
 }
 
 function getChainForAsset(asset: string) {
@@ -323,7 +437,11 @@ async function fetchOkxAprs(): Promise<AprOpportunity[]> {
     // ignore and fallback
   }
 
-  return results.length > 0 ? results : fetchStaticByPlatform('OKX');
+  if (results.length === 0) {
+    return fetchStaticByPlatform('OKX');
+  }
+
+  return results;
 }
 
 async function fetchKucoinAprs(): Promise<AprOpportunity[]> {
@@ -410,5 +528,9 @@ async function fetchKucoinAprs(): Promise<AprOpportunity[]> {
     }
   }
 
-  return results.length > 0 ? results : fetchStaticByPlatform('KuCoin');
+  if (results.length === 0) {
+    return fetchStaticByPlatform('KuCoin');
+  }
+
+  return results;
 }

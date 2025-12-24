@@ -9,19 +9,32 @@ export async function GET(request: NextRequest) {
 
     const live = await fetchTopAprOpportunities(limit);
     const historic = await getTopAprOpportunities(limit);
-    const combined = [...live, ...historic]
-      .reduce<Map<string, typeof live[0]>>((acc, item) => {
-        if (!item) return acc;
-        const key = `${item.platform}-${item.symbol}`;
-        if (!acc.has(key) || acc.get(key)!.apr < item.apr) {
-          acc.set(key, item);
-        }
-        return acc;
-      }, new Map())
-      .values();
+
+    const liveKeys = new Set(live.map((item) => `${item.platform}-${item.symbol}`));
+    const filteredHistoric = historic.filter((item: any) => liveKeys.has(`${item.platform}-${item.symbol}`));
+
+    const combined = [...live, ...filteredHistoric].reduce<Map<string, any>>((acc, item) => {
+      if (!item) return acc;
+      const key = `${item.platform}-${item.symbol}`;
+      // prefer freshest, then highest apr
+      const existing = acc.get(key);
+      if (
+        !existing ||
+        new Date(existing.lastUpdated || existing.fetchedAt || 0) < new Date(item.lastUpdated || item.fetchedAt || 0) ||
+        (existing.lastUpdated === item.lastUpdated && existing.apr < item.apr)
+      ) {
+        acc.set(key, {
+          ...item,
+          lastUpdated: item.lastUpdated || item.fetchedAt || new Date().toISOString(),
+        });
+      }
+      return acc;
+    }, new Map());
+
+    const sorted = Array.from(combined.values()).sort((a, b) => b.apr - a.apr).slice(0, limit);
 
     return NextResponse.json({
-      data: Array.from(combined).sort((a, b) => b.apr - a.apr).slice(0, limit),
+      data: sorted,
     });
   } catch (error) {
     console.error('APR top error', error);

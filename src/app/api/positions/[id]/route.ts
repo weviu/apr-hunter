@@ -1,0 +1,47 @@
+import { NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
+import { getMongoDb } from '@/lib/db/mongodb';
+import { getUserFromRequest, unauthorized, dbUnavailable } from '@/lib/api/server-auth';
+
+type DeleteContext = { params: Promise<{ id: string }> } | { params: { id: string } };
+
+export async function DELETE(_req: Request, ctx: DeleteContext) {
+  const auth = await getUserFromRequest(_req);
+  if (!auth) return unauthorized();
+  const db = await getMongoDb();
+  if (!db) return dbUnavailable();
+
+  const params = 'params' in ctx ? await (ctx as any).params : undefined;
+  const id = params?.id;
+
+  let objectId: ObjectId;
+  try {
+    objectId = new ObjectId(id);
+  } catch {
+    return NextResponse.json({ success: false, error: 'Invalid id' }, { status: 400 });
+  }
+
+  const authUserIdStr = String((auth.user as any)._id ?? '');
+
+  const doc = await db.collection('positions').findOne({ _id: objectId });
+  if (!doc) {
+    return NextResponse.json({ success: false, error: 'Position not found' }, { status: 404 });
+  }
+
+  const docUserIdStr = String((doc as any).userId ?? '');
+  if (docUserIdStr !== authUserIdStr) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+  }
+
+  const updateResult = await db.collection('positions').updateOne(
+    { _id: objectId },
+    { $set: { status: 'closed', updatedAt: new Date().toISOString() } }
+  );
+
+  if (!updateResult.matchedCount) {
+    return NextResponse.json({ success: false, error: 'Position not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+

@@ -25,4 +25,11 @@ export const api = {
   get<T>(url: string, init?: RequestInit) {
     return request<T>(url, init);
   },
+  post<T>(url: string, body?: unknown, init?: RequestInit) {
+    return request<T>(url, {
+      ...init,
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  },
 };
