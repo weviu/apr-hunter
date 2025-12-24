@@ -18,14 +18,16 @@ export async function GET(request: NextRequest) {
       const key = `${item.platform}-${item.symbol}`;
       // prefer freshest, then highest apr
       const existing = acc.get(key);
+      const existingFetched = (existing as any)?.fetchedAt;
+      const itemFetched = (item as any)?.fetchedAt;
       if (
         !existing ||
-        new Date(existing.lastUpdated || existing.fetchedAt || 0) < new Date(item.lastUpdated || item.fetchedAt || 0) ||
+        new Date(existing.lastUpdated || existingFetched || 0) < new Date(item.lastUpdated || itemFetched || 0) ||
         (existing.lastUpdated === item.lastUpdated && existing.apr < item.apr)
       ) {
         acc.set(key, {
           ...item,
-          lastUpdated: item.lastUpdated || item.fetchedAt || new Date().toISOString(),
+          lastUpdated: item.lastUpdated || itemFetched || new Date().toISOString(),
         });
       }
       return acc;
