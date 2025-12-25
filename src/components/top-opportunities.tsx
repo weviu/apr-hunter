@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { TrendingUp, ExternalLink, Clock, RefreshCw } from 'lucide-react';
+import { TrendingUp, ExternalLink, Clock, RefreshCw, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { AprTrendResponse, AprTrend } from '@/types/apr';
 
 interface AprData {
   _id?: string;
@@ -64,6 +65,54 @@ export function TopOpportunities() {
   });
 
   const opportunities: AprData[] = data?.data?.data || [];
+
+  const trendsQuery = useQuery({
+    queryKey: ['top-apr-trends', opportunities.map((o) => `${o.platform}-${o.asset}`).join(',')],
+    enabled: opportunities.length > 0,
+    queryFn: async () => {
+      const unique = Array.from(new Set(opportunities.map((o) => `${o.platform}|||${o.asset}`)));
+      const results: Record<string, AprTrendResponse> = {};
+      await Promise.all(
+        unique.map(async (key) => {
+          const [platform, asset] = key.split('|||');
+          const res = await api.get<AprTrendResponse>(`/api/apr/trends?asset=${asset}&platform=${platform}`);
+          results[key] = res.data;
+        })
+      );
+      return results;
+    },
+    refetchInterval: 30000,
+  });
+
+  const getTrendBadge = (platform: string, asset: string) => {
+    const key = `${platform}|||${asset}`;
+    const t = trendsQuery.data?.[key];
+    if (!t || !t.success || t.trend24h === undefined) return null;
+    const { trend, deltaPct } = t.trend24h;
+    const label = `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(2)}% (24h)`;
+    if (trend === 'up') {
+      return (
+        <span className="inline-flex items-center text-emerald-400 text-xs gap-1">
+          <ArrowUpRight className="h-3 w-3" />
+          {label}
+        </span>
+      );
+    }
+    if (trend === 'down') {
+      return (
+        <span className="inline-flex items-center text-red-400 text-xs gap-1">
+          <ArrowDownRight className="h-3 w-3" />
+          {label}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center text-gray-400 text-xs gap-1">
+        <Minus className="h-3 w-3" />
+        {label}
+      </span>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -178,6 +227,9 @@ export function TopOpportunities() {
                         APY: {item.apy.toFixed(2)}%
                       </div>
                     )}
+                    <div className="mt-1">
+                      {getTrendBadge(item.platform, item.asset)}
+                    </div>
                   </div>
 
                   {/* Risk level */}

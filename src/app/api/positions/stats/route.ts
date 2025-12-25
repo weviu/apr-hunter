@@ -48,7 +48,7 @@ export async function GET(req: Request) {
   const userId = auth.user._id;
   const positionsRaw = await db
     .collection('positions')
-    .find({ userId: new ObjectId(userId), status: 'active' })
+    .find({ userId: new ObjectId(userId) })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -70,6 +70,8 @@ export async function GET(req: Request) {
       aprSource,
       aprLastUpdated,
       entryPrice,
+      status: p.status || 'active',
+      closedAt: p.closedAt,
     };
   });
 
@@ -94,10 +96,12 @@ export async function GET(req: Request) {
     await enrichPositionWithApr(db, pos);
   }
 
+  const activePositions = normalized.filter((p) => (p.status || 'active') === 'active');
+
   let totalValue = 0;
   let totalEarnings = 0;
 
-  for (const position of normalized) {
+  for (const position of activePositions) {
     const positionValue =
       typeof position.currentValue === 'number'
         ? position.currentValue
@@ -118,7 +122,7 @@ export async function GET(req: Request) {
     success: true,
     totalValue: round2(totalValue),
     totalEarnings: round2(totalEarnings),
-    positionCount: normalized.length,
+    positionCount: activePositions.length,
     positions: normalized.map((p) => ({
       ...p,
       currentValue: typeof p.currentValue === 'number' ? round2(p.currentValue) : p.currentValue,

@@ -3,7 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState, useRef } from 'react';
 import { api } from '@/lib/api';
-import { TrendingUp, TrendingDown, ExternalLink, Clock, RefreshCw, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, ExternalLink, Clock, RefreshCw, Info, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { AprTrendResponse } from '@/types/apr';
 
 interface AprData {
   _id?: string;
@@ -132,6 +133,52 @@ export function AprComparison() {
     queryFn: () => api.get<{ data: { data: AprData[] } }>(`/api/apr/asset/${selectedAsset}?includeHistory=true`),
     refetchInterval: 30000,
   });
+
+  const trendData = useQuery({
+    queryKey: ['apr-trends', selectedAsset],
+    enabled: !!selectedAsset,
+    queryFn: async () => {
+      const platforms = Array.from(new Set(aprData.map((d) => d.platform)));
+      const results: Record<string, AprTrendResponse> = {};
+      await Promise.all(
+        platforms.map(async (platform) => {
+          const res = await api.get<AprTrendResponse>(`/api/apr/trends?asset=${selectedAsset}&platform=${platform}`);
+          results[platform] = res.data;
+        })
+      );
+      return results;
+    },
+    refetchInterval: 30000,
+  });
+
+  const getTrendBadge = (platform: string) => {
+    const t = trendData.data?.[platform];
+    if (!t || !t.success || !t.trend24h) return null;
+    const { trend, deltaPct } = t.trend24h;
+    const label = `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(2)}% (24h)`;
+    if (trend === 'up') {
+      return (
+        <span className="inline-flex items-center text-emerald-400 text-xs gap-1">
+          <ArrowUpRight className="h-3 w-3" />
+          {label}
+        </span>
+      );
+    }
+    if (trend === 'down') {
+      return (
+        <span className="inline-flex items-center text-red-400 text-xs gap-1">
+          <ArrowDownRight className="h-3 w-3" />
+          {label}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center text-gray-400 text-xs gap-1">
+        <Minus className="h-3 w-3" />
+        {label}
+      </span>
+    );
+  };
 
   const aprData = (data?.data?.data ?? []) as AprData[];
   const knownPlatforms = ['OKX', 'Binance', 'KuCoin'];

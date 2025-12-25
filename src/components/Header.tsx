@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { NotificationBell } from './notification-bell';
 
 export function Header() {
   const router = useRouter();
@@ -46,12 +47,15 @@ export function Header() {
             </Link>
             <div className="hidden sm:flex items-center space-x-3">
               {user ? (
-                <button
-                  onClick={onSignOut}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
-                >
-                  Sign Out
-                </button>
+                <>
+                  <NotificationBell />
+                  <button
+                    onClick={onSignOut}
+                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
               ) : (
                 <>
                   <Link

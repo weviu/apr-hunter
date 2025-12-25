@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { env } from '@/lib/env';
 import { sampleAprData } from '@/lib/data/sampleAprRates';
 import { AprOpportunity } from '@/types/apr';
+import { appendAprHistory, saveAprSnapshots } from '@/lib/db/repositories/aprRepository';
 
 type HttpMethod = 'GET' | 'POST';
 
@@ -208,6 +209,13 @@ export async function fetchAllAprOpportunities(): Promise<AprOpportunity[]> {
 
   // Always stamp freshness so the UI reflects the latest fetch time even if sources report older timestamps
   const stamped = stampFresh(live);
+  try {
+    const fetchedAt = new Date().toISOString();
+    await saveAprSnapshots(stamped, fetchedAt);
+    await appendAprHistory(stamped, fetchedAt);
+  } catch {
+    // non-fatal
+  }
   return stamped;
 }
 

@@ -33,9 +33,10 @@ export async function DELETE(_req: Request, ctx: DeleteContext) {
     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
+  const nowIso = new Date().toISOString();
   const updateResult = await db.collection('positions').updateOne(
     { _id: objectId },
-    { $set: { status: 'closed', updatedAt: new Date().toISOString() } }
+    { $set: { status: 'closed', closedAt: nowIso, updatedAt: nowIso } }
   );
 
   if (!updateResult.matchedCount) {

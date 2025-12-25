@@ -24,12 +24,13 @@ type Position = {
   currentApr?: number;
   entryPrice?: number;
   currentPrice?: number;
-  status: string;
+  status?: string;
   notes?: string;
   createdAt: string;
   currentValue?: number;
   aprSource?: string;
   aprLastUpdated?: string;
+  closedAt?: string;
 };
 
 type PortfolioStats = {
@@ -72,9 +73,12 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     setLoadingStats(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000); // safety timeout
     try {
       const res = await fetch(`${API_BASE}/api/positions/stats`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        signal: controller.signal,
       });
       if (res.ok) {
         const data = await res.json();
@@ -83,6 +87,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
+      clearTimeout(timeout);
       setLoadingStats(false);
     }
   };
@@ -107,6 +112,9 @@ export default function DashboardPage() {
 
   const [pendingDelete, setPendingDelete] = useState<Position | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [sortBy, setSortBy] = useState<'value' | 'apr' | 'pl'>('value');
+  const [search, setSearch] = useState('');
 
   const handleDeletePosition = async (positionId: string) => {
     setIsDeleting(true);
@@ -153,7 +161,66 @@ export default function DashboardPage() {
   if (!user) return null;
 
   const positions = stats?.positions || [];
-  const hasPositions = positions.length > 0;
+  const filteredPositions = positions.filter((p) => {
+    const status = (p.status || 'active').toLowerCase();
+    const matchesStatus = statusFilter === 'all' ? true : status === statusFilter;
+    const term = search.trim().toLowerCase();
+    const matchesTerm =
+      !term ||
+      p.asset.toLowerCase().includes(term) ||
+      p.platform.toLowerCase().includes(term);
+    return matchesStatus && matchesTerm;
+  });
+
+  const getPL = (p: Position) => {
+    const entryValue =
+      typeof p.entryPrice === 'number' && typeof p.amount === 'number'
+        ? p.entryPrice * p.amount
+        : null;
+    const currentValue =
+      typeof p.currentValue === 'number'
+        ? p.currentValue
+        : entryValue;
+    if (entryValue === null || currentValue === null) {
+      return { value: 0, label: 'N/A' };
+    }
+    const diff = currentValue - entryValue;
+    const sign = diff >= 0 ? '+' : '-';
+    return { value: diff, label: `${sign}$${Math.abs(diff).toLocaleString()}` };
+  };
+
+  const getYields = (p: Position) => {
+    const base =
+      typeof p.currentValue === 'number'
+        ? p.currentValue
+        : typeof p.entryPrice === 'number'
+          ? p.entryPrice * (p.amount || 0)
+          : null;
+    const apr = (p.currentApr ?? p.entryApr) || 0;
+    if (base === null || base <= 0) {
+      return { daily: null, monthly: null };
+    }
+    const daily = (apr / 100 / 365) * base;
+    const monthly = daily * 30;
+    return {
+      daily: `$${daily.toFixed(2)}/day`,
+      monthly: `$${monthly.toFixed(2)}/30d`,
+    };
+  };
+
+  const sortedPositions = [...filteredPositions].sort((a, b) => {
+    const valueA = typeof a.currentValue === 'number' ? a.currentValue : 0;
+    const valueB = typeof b.currentValue === 'number' ? b.currentValue : 0;
+    const aprA = (a.currentApr ?? a.entryApr) || 0;
+    const aprB = (b.currentApr ?? b.entryApr) || 0;
+    const plA = getPL(a).value;
+    const plB = getPL(b).value;
+    if (sortBy === 'value') return valueB - valueA;
+    if (sortBy === 'apr') return aprB - aprA;
+    return plB - plA;
+  });
+
+  const hasPositions = sortedPositions.length > 0;
 
   const getFreshness = (lastUpdated?: string) => {
     if (!lastUpdated) return { label: 'Unknown', dot: 'bg-gray-500', color: 'text-gray-500' };
@@ -239,7 +306,44 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             <div className="bg-gray-800 rounded-xl border border-gray-700">
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                <h2 className="text-xl font-semibold text-white">My Positions</h2>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold text-white">My Positions</h2>
+                  <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <span>Status:</span>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                        className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200"
+                      >
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>Sort:</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200"
+                      >
+                        <option value="value">Value</option>
+                        <option value="apr">APR</option>
+                        <option value="pl">P/L</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>Search:</span>
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Asset or platform"
+                        className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
                 <Link href="/dashboard/positions/new" className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
                   <Plus className="h-4 w-4" />
                   <span>Add Position</span>
@@ -254,51 +358,71 @@ export default function DashboardPage() {
                   </div>
                 ) : hasPositions ? (
                   <div className="space-y-4">
-                    {positions.map((position) => (
-                      <div key={position._id} className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700/70 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-bold text-white">{position.asset.slice(0, 2)}</span>
-                            </div>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-white">
-                                  {position.amount} {position.asset}
-                                </h3>
-                                <span className="text-xs px-2 py-0.5 bg-gray-600 rounded text-gray-300">{position.platform}</span>
+                    {sortedPositions.map((position) => {
+                      const pl = getPL(position);
+                      const yields = getYields(position);
+                      const status = (position.status || 'active').toLowerCase();
+                      return (
+                        <div key={position._id} className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700/70 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-white">{position.asset.slice(0, 2)}</span>
                               </div>
-                              <p className="text-sm text-gray-400">
-                                APR: {(position.currentApr ?? position.entryApr)?.toFixed(2)}%
-                                {typeof position.currentValue === 'number' && (
-                                  <span className="ml-2">• Value: ${position.currentValue.toLocaleString()}</span>
-                                )}
-                              </p>
-                              <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                <span className="flex items-center gap-1">
-                                  <span className={`w-2 h-2 rounded-full ${getFreshness(position.aprLastUpdated).dot}`} />
-                                  <span className={getFreshness(position.aprLastUpdated).color}>
-                                    {getFreshness(position.aprLastUpdated).label}
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <h3 className="font-semibold text-white">
+                                    {position.amount} {position.asset}
+                                  </h3>
+                                  <span className="text-xs px-2 py-0.5 bg-gray-600 rounded text-gray-300">{position.platform}</span>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded ${
+                                      status === 'closed'
+                                        ? 'bg-gray-600 text-gray-300'
+                                        : 'bg-emerald-500/10 text-emerald-300'
+                                    }`}
+                                  >
+                                    {status === 'closed' ? 'Closed' : 'Active'}
                                   </span>
-                                </span>
-                                <span>•</span>
-                                <span>Source: {position.aprSource || position.platform || 'N/A'}</span>
-                              </p>
+                                </div>
+                                <p className="text-sm text-gray-400">
+                                  APR: {(position.currentApr ?? position.entryApr)?.toFixed(2)}%
+                                  {typeof position.currentValue === 'number' && (
+                                    <span className="ml-2">• Value: ${position.currentValue.toLocaleString()}</span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <span className={`w-2 h-2 rounded-full ${getFreshness(position.aprLastUpdated).dot}`} />
+                                    <span className={getFreshness(position.aprLastUpdated).color}>
+                                      {getFreshness(position.aprLastUpdated).label}
+                                    </span>
+                                  </span>
+                                  <span>•</span>
+                                  <span>Source: {position.aprSource || position.platform || 'N/A'}</span>
+                                </p>
+                                <div className="flex flex-wrap gap-3 text-xs text-gray-400 mt-2">
+                                  <span className={pl.value >= 0 ? 'text-emerald-400' : 'text-red-400'}>P/L: {pl.label}</span>
+                                  {yields.daily && <span>• Daily: {yields.daily}</span>}
+                                  {yields.monthly && <span>• 30d: {yields.monthly}</span>}
+                                  {position.closedAt && <span>• Closed: {new Date(position.closedAt).toLocaleDateString()}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => setPendingDelete(position)}
+                                className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                title="Close position"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => setPendingDelete(position)}
-                              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                              title="Close position"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {position.notes && <p className="text-sm text-gray-500 mt-2 pl-14">{position.notes}</p>}
                         </div>
-                        {position.notes && <p className="text-sm text-gray-500 mt-2 pl-14">{position.notes}</p>}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-12">
