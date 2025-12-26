@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { fetchAllAprOpportunities } from '@/lib/exchanges/registry';
-import { saveAprSnapshots } from '@/lib/db/repositories/aprRepository';
 
 function getMeta(opportunities: Awaited<ReturnType<typeof fetchAllAprOpportunities>>) {
   const exchanges = Array.from(new Set(opportunities.map((item) => item.platform)));
@@ -19,12 +18,10 @@ function getMeta(opportunities: Awaited<ReturnType<typeof fetchAllAprOpportuniti
 export async function GET() {
   try {
     const data = await fetchAllAprOpportunities();
-    const fetchedAt = new Date().toISOString();
-    await saveAprSnapshots(data, fetchedAt);
 
     return NextResponse.json({
       data,
-      fetchedAt,
+      fetchedAt: new Date().toISOString(),
       meta: getMeta(data),
     });
   } catch (error) {
