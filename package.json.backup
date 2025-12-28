@@ -2,16 +2,17 @@
   "name": "apr-hunter-app",
   "version": "0.1.0",
   "private": true,
-    "scripts": {
+  "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
     "dev:turbo": "next dev --turbopack",
     "dev:no-turbo": "next dev --no-turbopack",
+    "build": "next build",
+    "start": "next start",
     "start:server": "dotenv -e .env.server -- pnpm next start",
-    "test": "node test-connection-unified.js",
-    "test:db": "node test-connection-unified.js",
-    "env:check": "node -e \"const os = require('os'); const envFile = os.platform() === 'win32' ? '.env.local' : '.env.server'; require('fs').existsSync(envFile) ? console.log('Using:', envFile) : console.log('No env file found');\""
+    "postinstall": "pnpm run build",
+    "test:db": "node test-local.js",
+    "test:db:server": "node test-server.js",
+    "env:check": "node -e \"console.log('DB_HOST:', process.env.DB_HOST || 'Not set');\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",

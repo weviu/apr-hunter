@@ -14,11 +14,8 @@ dist/
 out/
 
 # Environment variables
-.env.local
-.env.server
-.env.production
-.env.test
-
+.env*
+!.env.example
 # IDE
 .vscode/
 .idea/
@@ -34,4 +31,6 @@ Thumbs.db
 .cache/
 .turbo/
 
+
+test-local.js
 package.json
