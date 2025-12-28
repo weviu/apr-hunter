@@ -1,13 +1,9 @@
-// next.config.js
+// next.config.js - REVERT TO ORIGINAL/EMPTY
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Tell Turbopack where the root is
+  // Remove the custom env loading logic
   experimental: {
-    turbo: {
-      resolveAlias: {
-        // Add any aliases if needed
-      }
-    }
+    turbo: {}
   }
 };
 
