@@ -8,10 +8,10 @@
     "dev:no-turbo": "next dev --no-turbopack",
     "build": "next build",
     "start": "next start",
-    "start:server": "dotenv -e .env.server -- pnpm next start",
+    "start:server": "node --env-file=.env.server next start",
     "postinstall": "pnpm run build",
-    "test:db": "dotenv -e .env.local -- node test-connection.js",
-    "test:db:server": "dotenv -e .env.server -- node test-connection.js",
+    "test:db": "node test-connection.js --local",
+    "test:db:server": "node test-server.js",
     "env:check": "dotenv -e .env.local -- node -e \"console.log('DB_HOST:', process.env.DB_HOST); console.log('TLS_CA_FILE:', process.env.TLS_CA_FILE);\""
   },
   "dependencies": {
