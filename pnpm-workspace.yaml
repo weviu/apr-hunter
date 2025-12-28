@@ -1,3 +1,8 @@
+# pnpm-workspace.yaml
+packages:
+  - '.'  # Root package
+  - 'packages/*'  # If you have any sub-packages
+
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver

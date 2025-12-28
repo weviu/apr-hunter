@@ -4,10 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "dev:turbo": "next dev --turbopack",
+    "dev:no-turbo": "next dev --no-turbopack",
+    "build": "next build",
     "start": "next start",
-    "pm2:start": "pnpm build && pm2 start ecosystem.config.cjs --only apr-hunter",
-    "lint": "eslint"
+    "start:server": "dotenv -e .env.server -- pnpm next start",
+    "postinstall": "pnpm run build",
+    "test:db": "dotenv -e .env.local -- node test-connection.js",
+    "test:db:server": "dotenv -e .env.server -- node test-connection.js",
+    "env:check": "dotenv -e .env.local -- node -e \"console.log('DB_HOST:', process.env.DB_HOST); console.log('TLS_CA_FILE:', process.env.TLS_CA_FILE);\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
@@ -23,6 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.0",
     "postcss": "^8.4.49",
