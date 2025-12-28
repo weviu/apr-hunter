@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Load API keys from .env.secrets before validating
+import '@/config/secrets';
+
 const envSchema = z.object({
   NEXT_PUBLIC_APP_ENV: z
     .enum(['development', 'preview', 'production'])

@@ -45,6 +45,14 @@ export function Header() {
             >
               Roadmap
             </Link>
+            {user && (
+              <Link
+                href="/dashboard/portfolios"
+                className="text-gray-300 hover:text-emerald-400 transition-colors"
+              >
+                Portfolios
+              </Link>
+            )}
             <div className="hidden sm:flex items-center space-x-3">
               {user ? (
                 <>

@@ -18,6 +18,7 @@ out/
 .env.server
 .env.production
 .env.test
+.env.secrets
 
 # IDE
 .vscode/

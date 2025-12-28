@@ -238,8 +238,18 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Welcome back, {user.name || user.email.split('@')[0]}!</h1>
-          <p className="text-gray-400 mt-1">Track your staking positions and monitor your earnings.</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Welcome back, {user.name || user.email.split('@')[0]}!</h1>
+              <p className="text-gray-400 mt-1">Track your staking positions and monitor your earnings.</p>
+            </div>
+            <Link 
+              href="/dashboard/portfolios"
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+            >
+              Manage Portfolios
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
