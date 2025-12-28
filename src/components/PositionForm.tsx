@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CexHolding } from '@/lib/exchanges/cex-adapter';
 
 interface PositionFormProps {
   onSubmit: (data: {
@@ -15,9 +16,10 @@ interface PositionFormProps {
   }) => Promise<void>;
   isLoading?: boolean;
   onCancel?: () => void;
+  onImportClick?: () => void;
 }
 
-export function PositionForm({ onSubmit, isLoading = false, onCancel }: PositionFormProps) {
+export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportClick }: PositionFormProps) {
   const [symbol, setSymbol] = useState('');
   const [asset, setAsset] = useState('');
   const [platform, setPlatform] = useState('');
@@ -71,6 +73,15 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel }: Position
     } catch (err: any) {
       setError(err.message || 'Failed to create position');
     }
+  };
+
+  const prefillFromExchange = (holding: CexHolding) => {
+    setSymbol(holding.symbol);
+    setAsset(holding.asset);
+    setPlatform(holding.platform);
+    setAmount(holding.amount.toString());
+    setPlatformType('exchange');
+    if (holding.chain) setChain(holding.chain);
   };
 
   return (
@@ -214,7 +225,7 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel }: Position
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-4 flex-col sm:flex-row">
         <button
           type="submit"
           disabled={isLoading}
@@ -222,6 +233,16 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel }: Position
         >
           {isLoading ? 'Adding...' : 'Add Position'}
         </button>
+        {onImportClick && (
+          <button
+            type="button"
+            onClick={onImportClick}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 border border-emerald-600/50 text-emerald-400 hover:bg-emerald-600/10 rounded-lg disabled:opacity-50 transition font-medium"
+          >
+            Import from Exchange
+          </button>
+        )}
         {onCancel && (
           <button
             type="button"
@@ -236,3 +257,5 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel }: Position
     </form>
   );
 }
+
+export { type PositionFormProps };

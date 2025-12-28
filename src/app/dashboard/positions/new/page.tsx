@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Header } from '@/components/Header';
+import { ImportFromExchange } from '@/components/ImportFromExchange';
+import { CexHolding } from '@/lib/exchanges/cex-adapter';
 import { useAuth } from '@/lib/auth';
 
 const PLATFORMS = ['OKX', 'KuCoin', 'Binance', 'Kraken', 'Aave'];
@@ -28,6 +30,7 @@ export default function NewPositionPage() {
   const [error, setError] = useState('');
   const [assetSearch, setAssetSearch] = useState('');
   const [isAssetMenuOpen, setIsAssetMenuOpen] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const assetMenuBlur = useRef<NodeJS.Timeout | null>(null);
   const [aprData, setAprData] = useState<any[]>([]);
 
@@ -158,6 +161,16 @@ export default function NewPositionPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleImportFromExchange = async (holding: CexHolding) => {
+    setFormData((prev) => ({
+      ...prev,
+      platform: holding.platform,
+      asset: holding.asset,
+      amount: holding.amount.toString(),
+    }));
+    setShowImportModal(false);
   };
 
   if (authLoading) {
@@ -314,6 +327,14 @@ export default function NewPositionPage() {
             </div>
 
             <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(true)}
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-3 border border-emerald-600/50 text-emerald-400 hover:bg-emerald-600/10 rounded-lg disabled:opacity-50 transition-colors font-medium"
+              >
+                Import from Exchange
+              </button>
               <Link href="/dashboard" className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-center transition-colors">
                 Cancel
               </Link>
@@ -335,6 +356,14 @@ export default function NewPositionPage() {
           </form>
         </div>
       </main>
+
+      {showImportModal && (
+        <ImportFromExchange
+          onImport={handleImportFromExchange}
+          onClose={() => setShowImportModal(false)}
+          isLoading={isSubmitting}
+        />
+      )}
     </div>
   );
 }

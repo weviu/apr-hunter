@@ -1,4 +1,4 @@
-import { getMongoDb } from '@/lib/mongodb';
+import { getMongoDb } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 

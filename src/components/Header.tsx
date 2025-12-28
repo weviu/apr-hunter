@@ -46,12 +46,20 @@ export function Header() {
               Roadmap
             </Link>
             {user && (
-              <Link
-                href="/dashboard/portfolios"
-                className="text-gray-300 hover:text-emerald-400 transition-colors"
-              >
-                Portfolios
-              </Link>
+              <>
+                <Link
+                  href="/dashboard/portfolios"
+                  className="text-gray-300 hover:text-emerald-400 transition-colors"
+                >
+                  Portfolios
+                </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="text-gray-300 hover:text-emerald-400 transition-colors"
+                >
+                  Settings
+                </Link>
+              </>
             )}
             <div className="hidden sm:flex items-center space-x-3">
               {user ? (
