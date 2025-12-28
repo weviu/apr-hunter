@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getMongoDb } from '@/lib/db/mongodb';
 import { getUserFromRequest, unauthorized, dbUnavailable } from '@/lib/api/server-auth';
 
-type DeleteContext = { params: Promise<{ id: string }> } | { params: { id: string } };
-
-export async function DELETE(_req: Request, ctx: DeleteContext) {
+export async function DELETE(_req: NextRequest, ctx: RouteContext<'/api/positions/[id]'>) {
   const auth = await getUserFromRequest(_req);
   if (!auth) return unauthorized();
   const db = await getMongoDb();
   if (!db) return dbUnavailable();
 
-  const params = 'params' in ctx ? await (ctx as any).params : undefined;
+  const params = await ctx.params;
   const id = params?.id;
 
   let objectId: ObjectId;

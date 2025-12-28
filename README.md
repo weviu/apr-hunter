@@ -31,6 +31,26 @@ The UI auto-refreshes every 30 s by calling local API routes:
 
 ---
 
+## Production (PM2)
+
+The repo ships with an `ecosystem.config.cjs` that runs `next start` directly through PM2, which avoids the previous `bash` recursion error. Always build the app before handing control to PM2 so `.next` exists:
+
+```bash
+pnpm install
+pnpm run pm2:start         # runs pnpm build && pm2 start ecosystem.config.cjs --only apr-hunter
+# or manually:
+pnpm build
+pm2 delete apr-hunter || true
+pm2 start ecosystem.config.cjs --only apr-hunter
+pm2 logs apr-hunter
+```
+
+- `pm2 restart apr-hunter` keeps the same process name and can be paired with another `pnpm build`.
+- The build script forces Webpack (`next build --webpack`) because Turbopack fails when it touches the checked-in MongoDB dataset.
+- The process uses the production Next.js server (`next start`), so no separate Node adapter is required.
+
+---
+
 ## Environment Variables
 
 Create a `.env.local` file in the repo root:

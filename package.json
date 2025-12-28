@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
+    "pm2:start": "pnpm build && pm2 start ecosystem.config.cjs --only apr-hunter",
     "lint": "eslint"
   },
   "dependencies": {

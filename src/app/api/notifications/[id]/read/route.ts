@@ -3,21 +3,13 @@ import { ObjectId } from 'mongodb';
 import { getMongoDb } from '@/lib/db/mongodb';
 import { getUserFromRequest, unauthorized, dbUnavailable } from '@/lib/api/server-auth';
 
-type RouteContext =
-  | { params: { id: string } }
-  | { params: Promise<{ id: string }> };
-
-async function resolveParams(ctx: RouteContext) {
-  return 'params' in ctx && (ctx as any).params?.then ? await (ctx as any).params : (ctx as any).params;
-}
-
-export async function PUT(req: NextRequest, ctx: RouteContext) {
+export async function PUT(req: NextRequest, ctx: RouteContext<'/api/notifications/[id]/read'>) {
   const auth = await getUserFromRequest(req);
   if (!auth) return unauthorized();
   const db = await getMongoDb();
   if (!db) return dbUnavailable();
 
-  const params = await resolveParams(ctx);
+  const params = await ctx.params;
 
   let objectId: ObjectId;
   try {

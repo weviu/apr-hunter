@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchAprBySymbol } from '@/lib/exchanges/registry';
 import { getLatestAprForAsset } from '@/lib/db/repositories/aprRepository';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ symbol: string }> },
-) {
+export async function GET(request: NextRequest, ctx: RouteContext<'/api/apr/asset/[symbol]'>) {
   try {
-    const { symbol } = await params;
+    const { symbol } = await ctx.params;
     if (!symbol) {
       return NextResponse.json({ error: 'Symbol is required' }, { status: 400 });
     }
