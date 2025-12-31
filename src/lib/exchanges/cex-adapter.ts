@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { env } from '@/lib/env';
 
 export interface CexHolding {
@@ -45,7 +46,8 @@ class BinanceAdapter extends CexAdapter {
     return response.json() as Promise<T>;
   }
 
-  async fetchHoldings(apiKey: string, apiSecret: string, passphrase?: string): Promise<CexHolding[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async fetchHoldings(apiKey: string, apiSecret: string, _passphrase?: string): Promise<CexHolding[]> {
     if (!apiKey || !apiSecret) {
       throw new Error('Binance credentials missing');
     }

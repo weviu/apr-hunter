@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
 import { getUserFromRequest } from '@/lib/api/server-auth';
-import { createPortfolio, getUserPortfolios, getPortfolioById, updatePortfolio, deletePortfolio } from '@/lib/db/repositories/portfolioRepository';
+import { createPortfolio, getUserPortfolios, getPortfolioById, getPortfolioStats } from '@/lib/db/repositories/portfolioRepository';
 
 export async function GET(req: Request) {
   try {
@@ -13,13 +12,27 @@ export async function GET(req: Request) {
     const { user } = result;
     const portfolios = await getUserPortfolios(user._id);
 
+    // Enrich portfolios with stats
+    const portfoliosWithStats = await Promise.all(
+      portfolios.map(async (portfolio) => {
+        const stats = await getPortfolioStats(portfolio._id!);
+        return {
+          ...portfolio,
+          totalValue: stats?.totalValue ?? 0,
+          totalPositions: stats?.totalPositions ?? 0,
+          avgApr: stats?.avgApr ?? 0,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      data: { portfolios },
+      data: { portfolios: portfoliosWithStats },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch portfolios';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch portfolios' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -33,9 +46,9 @@ export async function POST(req: Request) {
     }
 
     const { user } = result;
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
 
-    const { name, description, type, walletAddress } = body;
+    const { name, description, type, walletAddress } = body as { name?: string; description?: string; type?: string; walletAddress?: string };
 
     if (!name || !type) {
       return NextResponse.json(
@@ -54,7 +67,7 @@ export async function POST(req: Request) {
     const portfolioId = await createPortfolio(user._id, {
       name,
       description,
-      type,
+      type: type as 'web2' | 'web3',
       walletAddress: type === 'web3' ? walletAddress : undefined,
       isActive: true,
     });
@@ -68,9 +81,10 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create portfolio';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to create portfolio' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

@@ -18,8 +18,9 @@ export function ExchangeOAuthSettings() {
   const handleConnect = (exchange: string) => {
     setError(null);
     initiateOAuth.mutate(exchange, {
-      onError: (err: any) => {
-        setError(`Failed to connect ${exchange}: ${err.message}`);
+      onError: (err) => {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to connect ${exchange}: ${errorMsg}`);
       },
     });
   };
@@ -27,8 +28,9 @@ export function ExchangeOAuthSettings() {
   const handleDisconnect = (exchange: string) => {
     setError(null);
     disconnectExchange.mutate(exchange, {
-      onError: (err: any) => {
-        setError(`Failed to disconnect ${exchange}: ${err.message}`);
+      onError: (err) => {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to disconnect ${exchange}: ${errorMsg}`);
       },
     });
   };
@@ -123,8 +125,8 @@ export function ExchangeOAuthSettings() {
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
         <h4 className="font-semibold text-blue-300 mb-2">How it works</h4>
         <ul className="text-sm text-blue-200 space-y-1">
-          <li>• Click "Connect" to authenticate with an exchange via OAuth</li>
-          <li>• You'll be redirected to the exchange to approve access</li>
+          <li>• Click &quot;Connect&quot; to authenticate with an exchange via OAuth</li>
+          <li>• You&apos;ll be redirected to the exchange to approve access</li>
           <li>• Once approved, we can securely fetch your holdings</li>
           <li>• Your API keys are never shared with us - only access tokens</li>
           <li>• You can disconnect at any time from your exchange settings</li>

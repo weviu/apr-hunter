@@ -52,9 +52,9 @@ async function handleFetchHoldings(req: NextRequest, exchange: string) {
     }
 
     // Get user's API keys for this exchange
-    const userKeys = await getUserExchangeKeys(user._id, exchange, db);
+    const userKeys = await getUserExchangeKeys(user._id.toString(), exchange, db);
     
-    if (!userKeys) {
+    if (!userKeys) {        
       return NextResponse.json(
         { 
           success: false, 
@@ -79,11 +79,12 @@ async function handleFetchHoldings(req: NextRequest, exchange: string) {
           holdings,
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Failed to fetch ${exchange} holdings:`, error);
       
       // Check if it's an auth error
-      if (error.message.includes('401') || error.message.includes('Invalid') || error.message.includes('Unauthorized')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('401') || errorMessage.includes('Invalid') || errorMessage.includes('Unauthorized')) {
         return NextResponse.json(
           { 
             success: false, 
@@ -96,11 +97,12 @@ async function handleFetchHoldings(req: NextRequest, exchange: string) {
 
       throw error;
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching exchange holdings:', error);
 
     // Handle specific error cases
-    if (error.message.includes('credentials missing')) {
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('credentials missing')) {
       return NextResponse.json(
         {
           success: false,
@@ -110,11 +112,11 @@ async function handleFetchHoldings(req: NextRequest, exchange: string) {
       );
     }
 
-    if (error.message.includes('API error')) {
+    if (errorMessage.includes('API error')) {
       return NextResponse.json(
         {
           success: false,
-          message: `Failed to fetch holdings from ${exchange}: ${error.message}`,
+          message: `Failed to fetch holdings from ${exchange}: ${errorMessage}`,
         },
         { status: 502 }
       );

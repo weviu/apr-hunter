@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if user has provided their own API keys
-    const userKeys = await getUserExchangeKeys(user._id, exchange, db);
+    const userKeys = await getUserExchangeKeys(user._id.toString(), exchange, db);
     
     if (!userKeys) {
       return NextResponse.json(
@@ -51,11 +51,12 @@ export async function GET(req: NextRequest) {
 
     try {
       holdings = await adapter.fetchHoldings(userKeys.apiKey, userKeys.apiSecret, userKeys.passphrase);
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Failed to fetch ${exchange} holdings:`, error);
       
       // Check if it's an auth error
-      if (error.message.includes('401') || error.message.includes('Invalid') || error.message.includes('Unauthorized')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('401') || errorMessage.includes('Invalid') || errorMessage.includes('Unauthorized')) {
         return NextResponse.json(
           { 
             success: false, 
@@ -76,10 +77,11 @@ export async function GET(req: NextRequest) {
         holdings,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error fetching ${req.nextUrl.searchParams.get('exchange')} holdings:`, error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch holdings';
     return NextResponse.json(
-      { success: false, message: error.message || 'Failed to fetch holdings' },
+      { success: false, message },
       { status: 500 }
     );
   }

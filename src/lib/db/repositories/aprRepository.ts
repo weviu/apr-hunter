@@ -98,7 +98,7 @@ export async function appendAprHistory(data: AprOpportunity[], capturedAt: strin
 export async function getAprHistory(asset: string, platform: string, sinceIso?: string, limit = 200) {
   const db = await getMongoDb();
   if (!db) return [];
-  const match: any = { asset: asset.toUpperCase(), platform };
+  const match: Record<string, unknown> = { asset: asset.toUpperCase(), platform };
   if (sinceIso) {
     match.capturedAt = { $gte: sinceIso };
   }

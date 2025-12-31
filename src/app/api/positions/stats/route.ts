@@ -5,12 +5,13 @@ import { getUserFromRequest, unauthorized, dbUnavailable } from '@/lib/api/serve
 import { getPrices } from '@/lib/prices/coin-gecko';
 import { fetchAprBySymbol } from '@/lib/exchanges/registry';
 
-async function enrichPositionWithApr(db: any, position: any) {
+async function enrichPositionWithApr(db: any, position: Record<string, unknown>) {
   // Try live APR first
   try {
-    const liveBySymbol = await fetchAprBySymbol(position.asset);
+    const asset = typeof position.asset === 'string' ? position.asset : '';
+    const liveBySymbol = await fetchAprBySymbol(asset);
     const liveMatch = liveBySymbol.find(
-      (item) => item.platform?.toLowerCase() === position.platform?.toLowerCase()
+      (item) => item.platform?.toLowerCase() === String(position.platform || '').toLowerCase()
     );
     if (liveMatch?.apr !== undefined) {
       position.currentApr = liveMatch.apr;
@@ -18,13 +19,13 @@ async function enrichPositionWithApr(db: any, position: any) {
       position.aprLastUpdated = liveMatch.lastUpdated || new Date().toISOString();
       return position;
     }
-  } catch (e) {
+  } catch {
     // If live fetch fails, fall back to DB
   }
 
-  const aprData = await db.collection('apr_data').findOne({
-    platform: { $regex: new RegExp(`^${position.platform}$`, 'i') },
-    asset: { $regex: new RegExp(`^${position.asset}$`, 'i') },
+  const aprData = await (db as any).collection('apr_data').findOne({
+    platform: { $regex: new RegExp(`^${String(position.platform || '')}$`, 'i') },
+    asset: { $regex: new RegExp(`^${String(position.asset || '')}$`, 'i') },
   });
 
   if (aprData) {
@@ -52,7 +53,7 @@ export async function GET(req: Request) {
     .sort({ createdAt: -1 })
     .toArray();
 
-  const normalized = positionsRaw.map((p: any) => {
+  const normalized = positionsRaw.map((p: Record<string, unknown>) => {
     const amount = Number(p.amount) || 0;
     const entryPrice = p.entryPrice !== undefined ? Number(p.entryPrice) : undefined;
     const currentApr = typeof p.currentApr === 'number' ? p.currentApr : Number(p.entryApr) || 0;
@@ -79,7 +80,7 @@ export async function GET(req: Request) {
   const allAssets = Array.from(new Set(normalized.map((p) => p.asset).filter(Boolean)));
   const priceMap = allAssets.length ? await getPrices(allAssets) : {};
 
-  normalized.forEach((p) => {
+  normalized.forEach((p: any) => {
     const livePrice = priceMap[p.asset];
     if (typeof livePrice === 'number' && livePrice > 0 && p.amount > 0) {
       p.currentPrice = livePrice;
@@ -96,12 +97,12 @@ export async function GET(req: Request) {
     await enrichPositionWithApr(db, pos);
   }
 
-  const activePositions = normalized.filter((p) => (p.status || 'active') === 'active');
+  const activePositions = (normalized as any[]).filter((p) => (p.status || 'active') === 'active');
 
   let totalValue = 0;
   let totalEarnings = 0;
 
-  for (const position of activePositions) {
+  for (const position of activePositions as any[]) {
     const positionValue =
       typeof position.currentValue === 'number'
         ? position.currentValue
@@ -123,7 +124,7 @@ export async function GET(req: Request) {
     totalValue: round2(totalValue),
     totalEarnings: round2(totalEarnings),
     positionCount: activePositions.length,
-    positions: normalized.map((p) => ({
+    positions: (normalized as any[]).map((p: any) => ({
       ...p,
       currentValue: typeof p.currentValue === 'number' ? round2(p.currentValue) : p.currentValue,
     })),

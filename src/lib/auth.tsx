@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await api.get<{ data: { user: User }; success?: boolean; error?: string }>('/api/auth/me', {
         headers: { Authorization: `Bearer ${authToken}` },
       });
-      const ok = (response as any)?.data?.success ?? true;
+      const ok = (response.data as unknown as Record<string, unknown>)?.success ?? true;
       if (ok && response.data?.data?.user) {
         setUser(response.data.data.user);
         setToken(authToken);
@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       }
       return { success: false, error: response.data.error || 'Login failed' };
-    } catch (error: any) {
-      const message = error?.message || 'Login failed';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed';
       return { success: false, error: message };
     }
   };
@@ -95,8 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       }
       return { success: false, error: response.data.error || 'Registration failed' };
-    } catch (error: any) {
-      const message = error?.message || 'Registration failed';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Registration failed';
       return { success: false, error: message };
     }
   };

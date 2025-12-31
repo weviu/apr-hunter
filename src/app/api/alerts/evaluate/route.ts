@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     .find({ isActive: true })
     .toArray();
 
-  const notifications: any[] = [];
+  const notifications: Record<string, unknown>[] = [];
   const nowIso = new Date().toISOString();
 
   for (const alert of alerts) {

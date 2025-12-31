@@ -33,8 +33,8 @@ export function ImportFromExchange({ onImport, onClose, isLoading = false }: Imp
       setSelectedHolding(null);
       setSelectedExchange('');
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to import position');
+    } catch (err) {
+      setError((err as Record<string, unknown>)?.message as string || 'Failed to import position');
     } finally {
       setImporting(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -24,6 +24,31 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/notifications?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list: Notification[] = Array.isArray(data?.notifications)
+        ? data.notifications.map((n: Record<string, unknown>) => ({
+            ...n,
+            id: n.id ?? (n._id as { toString: () => string })?.toString?.() ?? String(n._id ?? ''),
+          }))
+        : Array.isArray(data)
+          ? data
+          : [];
+
+      setNotifications(list);
+      setUnreadCount(list.filter((n) => !n.read).length);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -37,35 +62,12 @@ export function NotificationBell() {
   useEffect(() => {
     if (!token) return;
     void fetchNotifications();
-    const interval = setInterval(fetchNotifications, FETCH_INTERVAL_MS);
+    const interval = setInterval(() => {
+      void fetchNotifications();
+    }, FETCH_INTERVAL_MS);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
-  const fetchNotifications = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/notifications?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const list: Notification[] = Array.isArray(data?.notifications)
-        ? data.notifications.map((n: any) => ({
-            ...n,
-            id: n.id ?? n._id?.toString?.() ?? String(n._id ?? ''),
-          }))
-        : Array.isArray(data)
-          ? data
-          : [];
-      setNotifications(list);
-      setUnreadCount(list.filter((n) => !n.read).length);
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const markAsRead = async (id: string) => {
     if (!token) return;

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { NotificationBell } from './notification-bell';
+import { WalletConnect } from './WalletConnect';
 
 export function Header() {
   const router = useRouter();
@@ -39,25 +40,19 @@ export function Header() {
             >
               Compare
             </Link>
-            <Link
-              href="/#roadmap"
-              className="text-gray-300 hover:text-emerald-400 transition-colors"
-            >
-              Roadmap
-            </Link>
             {user && (
               <>
+                <Link
+                  href="/dashboard"
+                  className="text-gray-300 hover:text-emerald-400 transition-colors"
+                >
+                  Dashboard
+                </Link>
                 <Link
                   href="/dashboard/portfolios"
                   className="text-gray-300 hover:text-emerald-400 transition-colors"
                 >
                   Portfolios
-                </Link>
-                <Link
-                  href="/dashboard/settings"
-                  className="text-gray-300 hover:text-emerald-400 transition-colors"
-                >
-                  Settings
                 </Link>
               </>
             )}
@@ -65,6 +60,16 @@ export function Header() {
               {user ? (
                 <>
                   <NotificationBell />
+                  <Link
+                    href="/dashboard/settings"
+                    className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                    title="Settings"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                  <div className="border-l border-gray-700 pl-3">
+                    <WalletConnect />
+                  </div>
                   <button
                     onClick={onSignOut}
                     className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"

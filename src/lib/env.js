@@ -1,5 +1,7 @@
 // src/lib/env.js - Universal environment loader
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
 
 function loadEnv(envFile = '.env.local') {

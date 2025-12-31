@@ -3,6 +3,7 @@ import { Sora } from 'next/font/google';
 import './globals.css';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
 import { AuthProvider } from '@/lib/auth';
+import { Web3Provider } from '@/components/Web3Provider';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -24,7 +25,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${sora.variable} font-body antialiased`}>
         <AuthProvider>
-          <ReactQueryProvider>{children}</ReactQueryProvider>
+          <ReactQueryProvider>
+            <Web3Provider>
+              {children}
+            </Web3Provider>
+          </ReactQueryProvider>
         </AuthProvider>
       </body>
     </html>

@@ -141,21 +141,23 @@ export async function GET(req: NextRequest) {
 
     // Return metadata only (not the actual keys)
     const exchangeKeys = user.exchangeKeys || {};
-    const metadata = Object.entries(exchangeKeys).reduce((acc, [exchange, keys]: [string, any]) => {
+    const metadata = Object.entries(exchangeKeys as Record<string, Record<string, unknown>>).reduce((acc: Record<string, Record<string, unknown>>, [exchange, keys]) => {
+      const keyRecord = keys as Record<string, unknown>;
       acc[exchange] = {
-        configured: !!keys?.apiKey,
-        lastUpdated: keys?.lastUpdated || null,
+        configured: !!(keyRecord?.apiKey),
+        lastUpdated: (keyRecord?.lastUpdated as string | null) || null,
       };
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, Record<string, unknown>>);
 
     return NextResponse.json({
       success: true,
       data: metadata,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching exchange keys metadata:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to fetch keys' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch keys';
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
 
@@ -230,9 +232,10 @@ export async function POST(req: NextRequest) {
         configured: true,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error saving exchange keys:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to save keys' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to save keys';
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
 
@@ -277,24 +280,29 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: `${exchange} API keys removed successfully`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting exchange keys:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to delete keys' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete keys';
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
 
 // Helper function to retrieve decrypted keys (internal use only)
-export async function getUserExchangeKeys(userId: any, exchange: string, db: any) {
-  const user = await db.collection('users').findOne({ _id: userId });
-  if (!user?.exchangeKeys?.[exchange]) {
+export async function getUserExchangeKeys(userId: string, exchange: string, db: { collection: (name: string) => { findOne: (filter: Record<string, unknown>) => Promise<Record<string, unknown> | null> } }) {
+  const userCollection = (db as { collection: (name: string) => { findOne: (filter: Record<string, unknown>) => Promise<unknown> } }).collection;
+  const user = await userCollection('users').findOne({ _id: userId }) as Record<string, unknown> | null;
+  if (!user) return null;
+  
+  const exchangeKeys = (user.exchangeKeys || {}) as Record<string, Record<string, unknown>>;
+  if (!exchangeKeys?.[exchange]) {
     return null;
   }
 
-  const encrypted = user.exchangeKeys[exchange];
+  const encrypted = exchangeKeys[exchange];
   return {
-    apiKey: decryptKey(encrypted.apiKey),
-    apiSecret: decryptKey(encrypted.apiSecret),
-    passphrase: encrypted.passphrase ? decryptKey(encrypted.passphrase) : undefined,
+    apiKey: decryptKey(encrypted.apiKey as string),
+    apiSecret: decryptKey(encrypted.apiSecret as string),
+    passphrase: (encrypted.passphrase as string) ? decryptKey(encrypted.passphrase as string) : undefined,
   };
 }
 

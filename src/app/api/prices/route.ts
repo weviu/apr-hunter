@@ -7,8 +7,9 @@ export async function POST(req: Request) {
     const symbols = Array.isArray(body?.symbols) ? body.symbols.map((s) => s.toUpperCase()) : [];
     const prices = await getPrices(symbols);
     return NextResponse.json({ success: true, prices });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Failed to fetch prices' }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch prices';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 

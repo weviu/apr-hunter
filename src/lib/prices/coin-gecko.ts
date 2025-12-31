@@ -2,14 +2,14 @@ import { Db } from 'mongodb';
 import { getMongoDb } from '@/lib/db/mongodb';
 
 type PriceDoc = {
-  _id?: any;
+  _id?: Record<string, unknown>;
   symbol: string;
   price: number;
   fetchedAt: string;
 };
 
 type SymbolMapDoc = {
-  _id?: any;
+  _id?: Record<string, unknown>;
   symbol: string;
   coingeckoId: string;
   fetchedAt: string;
@@ -109,8 +109,8 @@ export async function getPrices(symbols: string[]) {
     const fresh = await fetchFromCoinGecko(missing);
     await upsertPrices(db, fresh);
     return { ...cached, ...fresh };
-  } catch (e) {
-    console.error('Price fetch failed', e);
+  } catch (_e) {
+    console.error('Price fetch failed', _e);
     return cached; // return whatever we have
   }
 }
@@ -142,7 +142,7 @@ async function resolveMissingSymbolIds(db: Db, symbols: string[]) {
           .collection<SymbolMapDoc>(MAP_COLLECTION)
           .updateOne({ symbol: sym }, { $set: { symbol: sym, coingeckoId: id, fetchedAt: new Date().toISOString() } }, { upsert: true });
       }
-    } catch (e) {
+    } catch {
       // ignore search failures
     }
   }

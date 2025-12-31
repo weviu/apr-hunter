@@ -49,8 +49,9 @@ export function ExchangeKeysSettings() {
           setFormData({ apiKey: '', apiSecret: '', passphrase: '' });
           setExpandedExchange(null);
         },
-        onError: (err: any) => {
-          setError(err.message || 'Failed to save keys');
+        onError: (err) => {
+          const errorMsg = err instanceof Error ? err.message : 'Failed to save keys';
+          setError(errorMsg);
         },
       }
     );
@@ -59,8 +60,9 @@ export function ExchangeKeysSettings() {
   const handleRemoveKeys = (exchange: string) => {
     if (confirm(`Are you sure you want to remove ${exchange} API keys?`)) {
       removeKeys.mutate(exchange, {
-        onError: (err: any) => {
-          setError(err.message || 'Failed to remove keys');
+        onError: (err) => {
+          const errorMsg = err instanceof Error ? err.message : 'Failed to remove keys';
+          setError(errorMsg);
         },
       });
     }

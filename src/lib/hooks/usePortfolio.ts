@@ -37,7 +37,7 @@ export function usePortfolio(portfolioId: string, options?: { enabled?: boolean 
       const res = await api.get<ApiResponse<{
         portfolio: Portfolio;
         positions: Position[];
-        stats: any;
+        stats: Record<string, unknown>;
       }>>(`/api/portfolios/${portfolioId}`);
       return res.data.data || {};
     },
@@ -236,12 +236,12 @@ export function usePositionSnapshots(
 /**
  * Prefetch portfolio to avoid waterfall requests
  */
-export function usePrefetchPortfolio(queryClient: any) {
+export function usePrefetchPortfolio(queryClient: ReturnType<typeof useQueryClient>) {
   return (portfolioId: string) => {
     queryClient.prefetchQuery({
       queryKey: [PORTFOLIOS_KEY, portfolioId],
       queryFn: async () => {
-        const res = await api.get<any>(`/api/portfolios/${portfolioId}`);
+        const res = await api.get<Record<string, unknown>>(`/api/portfolios/${portfolioId}`);
         return res.data;
       },
     });

@@ -11,29 +11,33 @@ export async function GET(request: NextRequest) {
     const historic = await getTopAprOpportunities(limit);
 
     const liveKeys = new Set(live.map((item) => `${item.platform}-${item.symbol}`));
-    const filteredHistoric = historic.filter((item: any) => liveKeys.has(`${item.platform}-${item.symbol}`));
+    const filteredHistoric = historic.filter((item) => liveKeys.has(`${item.platform}-${item.symbol}`));
 
-    const combined = [...live, ...filteredHistoric].reduce<Map<string, any>>((acc, item) => {
+    const combined = [...live, ...filteredHistoric].reduce<Map<string, Record<string, unknown>>>((acc, item) => {
       if (!item) return acc;
       const key = `${item.platform}-${item.symbol}`;
       // prefer freshest, then highest apr
       const existing = acc.get(key);
-      const existingFetched = (existing as any)?.fetchedAt;
-      const itemFetched = (item as any)?.fetchedAt;
+      const existingRec = existing as unknown as Record<string, unknown>;
+      const itemRec = item as unknown as Record<string, unknown>;
+      const existingFetched = existingRec?.fetchedAt;
+      const itemFetched = itemRec?.fetchedAt;
+      const existingApr = Number(existingRec?.apr || 0);
+      const itemApr = Number(itemRec?.apr || 0);
       if (
         !existing ||
-        new Date(existing.lastUpdated || existingFetched || 0) < new Date(item.lastUpdated || itemFetched || 0) ||
-        (existing.lastUpdated === item.lastUpdated && existing.apr < item.apr)
+        new Date(String(existingRec.lastUpdated || existingFetched || 0)) < new Date(String(itemRec.lastUpdated || itemFetched || 0)) ||
+        (existingRec.lastUpdated === itemRec.lastUpdated && existingApr < itemApr)
       ) {
         acc.set(key, {
-          ...item,
-          lastUpdated: item.lastUpdated || itemFetched || new Date().toISOString(),
+          ...(item as unknown as Record<string, unknown>),
+          lastUpdated: itemRec.lastUpdated || itemFetched || new Date().toISOString(),
         });
       }
       return acc;
     }, new Map());
 
-    const sorted = Array.from(combined.values()).sort((a, b) => b.apr - a.apr).slice(0, limit);
+    const sorted = Array.from(combined.values()).sort((a, b) => Number(b.apr || 0) - Number(a.apr || 0)).slice(0, limit);
 
     return NextResponse.json({
       data: sorted,

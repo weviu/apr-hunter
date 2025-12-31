@@ -60,9 +60,10 @@ export async function POST(req: NextRequest) {
         redirectUrl: oauthUrl,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('OAuth initiate error:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to initiate OAuth' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to initiate OAuth';
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
 

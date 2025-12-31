@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Loader2 } from 'lucide-react';
-import { CexHolding } from '@/lib/exchanges/cex-adapter';
 
 const PLATFORMS = ['Binance', 'OKX', 'KuCoin', 'Kraken', 'Aave'];
 const POPULAR_ASSETS = ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'LINK', 'AVAX', 'MATIC', 'UNI', 'LTC'];
@@ -37,7 +36,7 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportCl
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
   const [isAssetMenuOpen, setIsAssetMenuOpen] = useState(false);
   const [assetSearch, setAssetSearch] = useState('');
-  const [aprData, setAprData] = useState<any[]>([]);
+  const [aprData, setAprData] = useState<Array<Record<string, unknown>>>([]);
 
   const platformMenuRef = useRef<HTMLDivElement>(null);
   const assetMenuRef = useRef<HTMLDivElement>(null);
@@ -62,7 +61,7 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportCl
   const assetsQuery = useQuery({
     queryKey: ['assets-autocomplete', platform],
     queryFn: () =>
-      fetch(`${API_BASE}/api/apr/assets${platform ? `?platform=${platform}` : ''}`).then((res) => res.json()),
+      fetch(`${API_BASE}/api/apr/assets${platform ? `?platform=${platform}` : ''}`).then((res) => res.json()) as Promise<{ data: Array<Record<string, unknown>> }>,
     staleTime: 5 * 60 * 1000,
     enabled: !!platform,
   });
@@ -77,18 +76,18 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportCl
         const res = await fetch(`${API_BASE}/api/apr/asset/${assetSymbol}`, { signal: controller.signal });
         if (!res.ok) return;
         const data = await res.json();
-        const list: any[] = Array.isArray(data?.data) ? data.data : [];
+        const list: Array<Record<string, unknown>> = Array.isArray(data?.data) ? data.data : [];
         const platformMatch = list.find(
-          (item) =>
+          (item: any) =>
             item?.platform &&
-            item.platform.toLowerCase() === platform.toLowerCase()
+            String(item.platform).toLowerCase() === platform.toLowerCase()
         );
         const best = platformMatch || list[0];
-        if (best?.apr !== undefined) {
-          setApr(best.apr.toString());
+        if ((best as any)?.apr !== undefined) {
+          setApr(String((best as any).apr));
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         console.error('Failed to fetch APR for asset:', err);
       }
     }
@@ -98,31 +97,28 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportCl
 
   // Auto-fill symbol when asset is selected
   useEffect(() => {
-    if (asset) {
-      setSymbol(asset.toUpperCase());
-    } else {
-      setSymbol('');
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSymbol(asset ? asset.toUpperCase() : '');
   }, [asset]);
 
   // Generate asset options
   const assetOptions = useMemo(() => {
     const apiAssets = assetsQuery.data?.data || [];
     const platformAssets = platform
-      ? (aprData || []).filter((d) => d.platform && d.platform.toLowerCase() === platform.toLowerCase())
+      ? (aprData || []).filter((d: Record<string, unknown>) => d.platform && String(d.platform).toLowerCase() === platform.toLowerCase())
       : [];
 
     const merged = new Map<string, string>();
 
     if (Array.isArray(apiAssets)) {
-      apiAssets.forEach((a: any) => {
-        if (a?.symbol) merged.set(a.symbol.toUpperCase(), a.name || a.symbol);
+      apiAssets.forEach((a: Record<string, unknown>) => {
+        if (a?.symbol) merged.set(String(a.symbol).toUpperCase(), String(a.name || a.symbol));
       });
     }
 
-    platformAssets.forEach((d: any) => {
+    platformAssets.forEach((d: Record<string, unknown>) => {
       if (d?.asset) {
-        merged.set(d.asset.toUpperCase(), d.asset.toUpperCase());
+        merged.set(String(d.asset).toUpperCase(), String(d.asset).toUpperCase());
       }
     });
 
@@ -193,16 +189,10 @@ export function PositionForm({ onSubmit, isLoading = false, onCancel, onImportCl
       setAmount('');
       setApr('');
       setAssetSearch('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create position');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create position';
+      setError(errorMsg);
     }
-  };
-
-  const prefillFromExchange = (holding: CexHolding) => {
-    setPlatform(holding.platform);
-    setAsset(holding.asset);
-    setAmount(holding.amount.toString());
-    if (holding.chain) setChain(holding.chain);
   };
 
   return (

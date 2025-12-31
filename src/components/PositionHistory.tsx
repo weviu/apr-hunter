@@ -30,7 +30,8 @@ export function PositionHistory({ snapshots, isLoading }: PositionHistoryProps) 
     <div className="space-y-3">
       {sortedSnapshots.map((snapshot, index) => {
         const prevSnapshot = sortedSnapshots[index + 1];
-        const amountChange =
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _amountChange =
           prevSnapshot && snapshot.amount !== prevSnapshot.amount
             ? snapshot.amount - prevSnapshot.amount
             : null;

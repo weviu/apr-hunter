@@ -84,7 +84,7 @@ export default function NewAlertPage() {
       } else {
         setError(data?.error || 'Failed to create alert');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to create alert. Please try again.');
     } finally {
       setSubmitting(false);

@@ -4,12 +4,13 @@ import { getMongoDb } from '@/lib/db/mongodb';
 import { getUserFromRequest, unauthorized, dbUnavailable } from '@/lib/api/server-auth';
 import { fetchAprBySymbol } from '@/lib/exchanges/registry';
 
-async function enrichPositionWithApr(db: any, position: any) {
+async function enrichPositionWithApr(db: any, position: Record<string, unknown>) {
   // Try live APR first
   try {
-    const liveBySymbol = await fetchAprBySymbol(position.asset);
+    const asset = typeof position.asset === 'string' ? position.asset : '';
+    const liveBySymbol = await fetchAprBySymbol(asset);
     const liveMatch = liveBySymbol.find(
-      (item) => item.platform?.toLowerCase() === position.platform?.toLowerCase()
+      (item) => item.platform?.toLowerCase() === String(position.platform || '').toLowerCase()
     );
     if (liveMatch?.apr !== undefined) {
       position.currentApr = liveMatch.apr;
@@ -17,13 +18,13 @@ async function enrichPositionWithApr(db: any, position: any) {
       position.aprLastUpdated = liveMatch.lastUpdated || new Date().toISOString();
       return position;
     }
-  } catch (e) {
+  } catch {
     // fallback to db
   }
 
-  const aprData = await db.collection('apr_data').findOne({
-    platform: { $regex: new RegExp(`^${position.platform}$`, 'i') },
-    asset: { $regex: new RegExp(`^${position.asset}$`, 'i') },
+  const aprData = await (db as any).collection('apr_data').findOne({
+    platform: { $regex: new RegExp(`^${String(position.platform || '')}$`, 'i') },
+    asset: { $regex: new RegExp(`^${String(position.asset || '')}$`, 'i') },
   });
 
   if (aprData) {

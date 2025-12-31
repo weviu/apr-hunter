@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
 
 interface PortfolioFormProps {
   onSubmit: (data: {
@@ -46,8 +45,9 @@ export function PortfolioForm({ onSubmit, isLoading = false, onCancel }: Portfol
       setDescription('');
       setType('web2');
       setWalletAddress('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create portfolio');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create portfolio';
+      setError(errorMsg);
     }
   };
 

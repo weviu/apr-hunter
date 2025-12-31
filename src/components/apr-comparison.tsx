@@ -61,7 +61,7 @@ export function AprComparison() {
   const [selectedAsset, setSelectedAsset] = useState<string>('BTC');
   const [assetSearch, setAssetSearch] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const blurTimeout = useRef<NodeJS.Timeout | null>(null);
+  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const aprAssetsQuery = useQuery({
     queryKey: ['apr-assets'],
@@ -151,7 +151,8 @@ export function AprComparison() {
     refetchInterval: 30000,
   });
 
-  const getTrendBadge = (platform: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getTrendBadge = (platform: string) => {
     const t = trendData.data?.[platform];
     if (!t || !t.success || !t.trend24h) return null;
     const { trend, deltaPct } = t.trend24h;

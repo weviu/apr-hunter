@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { usePortfolios, useCreatePortfolio, useDeletePortfolio } from '@/lib/hooks/usePortfolio';
 import { PortfolioCard } from '@/components/PortfolioCard';
 import { PortfolioForm } from '@/components/PortfolioForm';
+import { Header } from '@/components/Header';
 
 export default function PortfoliosPage() {
   const router = useRouter();
@@ -32,8 +33,8 @@ export default function PortfoliosPage() {
     return null; // Will redirect to login
   }
 
-  const handleCreate = async (data: any) => {
-    await createMutation.mutateAsync(data);
+  const handleCreate = async (data: Record<string, unknown>) => {
+    await createMutation.mutateAsync(data as any);
     setShowForm(false);
   };
 
@@ -52,12 +53,14 @@ export default function PortfoliosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">My Portfolios</h1>
-          <p className="text-gray-400 mt-2">Manage your investment portfolios and track positions.</p>
-        </div>
+    <div className="min-h-screen bg-gray-900">
+      <Header />
+      <div className="py-8 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white">My Portfolios</h1>
+            <p className="text-gray-400 mt-2">Manage your investment portfolios and track positions.</p>
+          </div>
 
         {showForm && (
           <div className="mb-8 p-6 bg-gray-800 border border-gray-700 rounded-lg">
@@ -107,6 +110,7 @@ export default function PortfoliosPage() {
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

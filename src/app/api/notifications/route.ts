@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     success: true,
-    notifications: notifications.map((n: any) => ({ ...n, id: n._id.toString() })),
+    notifications: notifications.map((n: Record<string, unknown>) => ({ ...n, id: (n._id as { toString(): string }).toString() })),
   });
 }
 

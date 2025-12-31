@@ -9,9 +9,18 @@ function getToken(req: Request) {
   return token.trim();
 }
 
-function sanitizeUser(doc: any) {
+interface UserDoc {
+  _id: Record<string, unknown>;
+  email: string;
+  passwordHash: string;
+  sessionToken?: string;
+  [key: string]: unknown;
+}
+
+function sanitizeUser(doc: UserDoc | null): Omit<UserDoc, 'passwordHash' | 'sessionToken'> | null {
   if (!doc) return null;
-  const { passwordHash, sessionToken, ...rest } = doc;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { passwordHash: _ph, sessionToken: _st, ...rest } = doc;
   return { ...rest, _id: doc._id?.toString?.() ?? doc._id };
 }
 
@@ -32,9 +41,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, data: { user: sanitizeUser(userDoc) } });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Failed to fetch user' }, { status: 500 });
+    return NextResponse.json({ success: true, data: { user: sanitizeUser(userDoc as unknown as UserDoc) } });
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Failed to fetch user';
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
 

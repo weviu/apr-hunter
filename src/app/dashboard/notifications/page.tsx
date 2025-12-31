@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowLeft, ArrowUp, Bell, Check, CheckCheck, Info, Trash2 } from 'lucide-react';
@@ -38,13 +38,7 @@ export default function NotificationsPage() {
     }
   }, [user, isLoading, router]);
 
-  useEffect(() => {
-    if (token) {
-      void fetchNotifications();
-    }
-  }, [token]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/notifications?limit=100`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -62,7 +56,13 @@ export default function NotificationsPage() {
     } finally {
       setLoadingNotifications(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      void fetchNotifications();
+    }
+  }, [token, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     try {

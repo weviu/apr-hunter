@@ -259,10 +259,10 @@ async function fetchBinanceAprs(): Promise<AprOpportunity[]> {
 
     if (Array.isArray(flexible?.rows)) {
       for (const product of flexible.rows) {
-        const asset = (product.asset || '').toUpperCase();
+        const asset = String(product.asset || '').toUpperCase();
         if (!asset) continue;
 
-        const apr = parseFloat(product.latestAnnualPercentageRate || product.avgAnnualPercentageRate || '0') * 100;
+        const apr = parseFloat(String(product.latestAnnualPercentageRate || product.avgAnnualPercentageRate || '0')) * 100;
         if (Number.isNaN(apr) || apr <= 0) continue;
 
         const existingIndex = results.findIndex((r) => r.asset === asset && r.lockPeriod === 'Flexible');
@@ -286,7 +286,7 @@ async function fetchBinanceAprs(): Promise<AprOpportunity[]> {
         });
       }
     }
-  } catch (e) {
+  } catch {
     // ignore and continue to locked
   }
 
@@ -304,7 +304,7 @@ async function fetchBinanceAprs(): Promise<AprOpportunity[]> {
 
     if (Array.isArray(locked?.rows)) {
       for (const product of locked.rows) {
-        const asset = (product.asset || '').toUpperCase();
+        const asset = String(product.asset || '').toUpperCase();
         if (!asset) continue;
 
         let apr = 0;
@@ -340,7 +340,7 @@ async function fetchBinanceAprs(): Promise<AprOpportunity[]> {
         });
       }
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 
@@ -386,11 +386,11 @@ async function fetchOkxAprs(): Promise<AprOpportunity[]> {
 
   try {
     // Flexible balance (Simple Earn)
-    const balance = await okxAuthenticatedRequest<{ code: string; data?: any[] }>('/api/v5/finance/savings/balance');
+    const balance = await okxAuthenticatedRequest<{ code: string; data?: Array<Record<string, unknown>> }>('/api/v5/finance/savings/balance');
     if (balance?.code === '0' && Array.isArray(balance.data)) {
       for (const item of balance.data) {
-        const asset = (item.ccy || '').toUpperCase();
-        const rate = parseFloat(item.lendingRate || item.rate || '0') * 100;
+        const asset = String(item.ccy || '').toUpperCase();
+        const rate = parseFloat(String(item.lendingRate || item.rate || '0')) * 100;
         if (!asset || rate <= 0) continue;
         results.push({
           id: `okx-flex-${asset}`,
@@ -408,17 +408,17 @@ async function fetchOkxAprs(): Promise<AprOpportunity[]> {
         });
       }
     }
-  } catch (e) {
+  } catch {
     // swallow and fall through to other endpoints / static
   }
 
   try {
     // Staking / DeFi offers
-    const staking = await okxAuthenticatedRequest<{ code: string; data?: any[] }>('/api/v5/finance/staking-defi/offers');
+    const staking = await okxAuthenticatedRequest<{ code: string; data?: Array<Record<string, unknown>> }>('/api/v5/finance/staking-defi/offers');
     if (staking?.code === '0' && Array.isArray(staking.data)) {
       for (const offer of staking.data) {
-        const asset = (offer.ccy || '').toUpperCase();
-        const apr = parseFloat(offer.apy || offer.rate || '0') * 100;
+        const asset = String(offer.ccy || '').toUpperCase();
+        const apr = parseFloat(String(offer.apy || offer.rate || '0')) * 100;
         if (!asset || apr <= 0) continue;
         const term = offer.term === '0' || offer.term === 0 ? 'Flexible' : `${offer.term} days`;
         // avoid duplicate lock periods
@@ -441,7 +441,7 @@ async function fetchOkxAprs(): Promise<AprOpportunity[]> {
         });
       }
     }
-  } catch (e) {
+  } catch {
     // ignore and fallback
   }
 
@@ -468,13 +468,13 @@ async function fetchKucoinAprs(): Promise<AprOpportunity[]> {
 
   for (const endpoint of endpoints) {
     try {
-      const data = await kucoinAuthenticatedRequest<{ code: string; data?: any }>(endpoint.path);
+      const data = await kucoinAuthenticatedRequest<{ code: string; data?: Record<string, unknown> }>(endpoint.path);
       if (data?.code !== '200000' || !data.data) continue;
 
-      const items = Array.isArray(data.data) ? data.data : data.data.items || [];
+      const items = Array.isArray(data.data) ? data.data : (Array.isArray((data.data as any).items) ? (data.data as any).items : []);
 
       for (const item of items) {
-        const asset = (item.currency || item.coin || item.ccy || '').toUpperCase();
+        const asset = String(item.currency || item.coin || item.ccy || '').toUpperCase();
         if (!asset) continue;
 
         const apyFields = [

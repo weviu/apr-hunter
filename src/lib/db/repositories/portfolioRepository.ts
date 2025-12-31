@@ -30,7 +30,7 @@ export interface Position {
   symbol: string;
   asset: string;
   platform: string; // e.g., 'Binance', 'Kraken', 'Aave'
-  platformType: string; // 'exchange' | 'defi'
+  platformType?: string; // 'exchange' | 'defi'
   chain?: string; // Ethereum, BSC, Polygon, etc.
   amount: number;
   apr?: number;
@@ -67,7 +67,7 @@ export async function createPortfolio(userId: ObjectId | string, data: Omit<Port
     updatedAt: now,
   };
 
-  const result = await db.collection(PORTFOLIOS).insertOne(doc as any);
+  const result = await db.collection(PORTFOLIOS).insertOne(doc as unknown as { _id?: ObjectId; [key: string]: unknown });
   return result.insertedId;
 }
 
@@ -87,7 +87,7 @@ export async function getUserPortfolios(userId: ObjectId | string): Promise<Port
   return db.collection(PORTFOLIOS).find({ userId: id }).sort({ createdAt: -1 }).toArray() as Promise<Portfolio[]>;
 }
 
-export async function updatePortfolio(portfolioId: ObjectId | string, updates: Partial<Portfolio>): Promise<boolean> {
+export async function updatePortfolio(portfolioId: ObjectId | string, updates: Record<string, unknown>): Promise<boolean> {
   const db = await getMongoDb();
   if (!db) return false;
 
@@ -129,7 +129,7 @@ export async function createPosition(portfolioId: ObjectId | string, userId: Obj
     updatedAt: now,
   };
 
-  const result = await db.collection(POSITIONS).insertOne(doc as any);
+  const result = await db.collection(POSITIONS).insertOne(doc as unknown as { _id?: ObjectId; [key: string]: unknown });
   return result.insertedId;
 }
 
@@ -149,7 +149,7 @@ export async function getPortfolioPositions(portfolioId: ObjectId | string): Pro
   return db.collection(POSITIONS).find({ portfolioId: id, isActive: true }).toArray() as Promise<Position[]>;
 }
 
-export async function updatePosition(positionId: ObjectId | string, updates: Partial<Position>): Promise<boolean> {
+export async function updatePosition(positionId: ObjectId | string, updates: Record<string, unknown>): Promise<boolean> {
   const db = await getMongoDb();
   if (!db) return false;
 
@@ -191,7 +191,7 @@ export async function recordPositionSnapshot(positionId: ObjectId | string, port
     ...snapshot,
   };
 
-  const result = await db.collection(POSITION_HISTORY).insertOne(doc as any);
+  const result = await db.collection(POSITION_HISTORY).insertOne(doc as unknown as { _id?: ObjectId; [key: string]: unknown });
   return result.insertedId;
 }
 
@@ -213,7 +213,7 @@ export async function getPortfolioSnapshot(portfolioId: ObjectId | string, befor
   if (!db) return [];
 
   const id = typeof portfolioId === 'string' ? new ObjectId(portfolioId) : portfolioId;
-  const query: any = { portfolioId: id };
+  const query: Record<string, unknown> = { portfolioId: id };
   if (before) {
     query.capturedAt = { $lt: before };
   }
@@ -227,25 +227,48 @@ export async function getPortfolioSnapshot(portfolioId: ObjectId | string, befor
 
 // ============ Analytics & Aggregations ============
 
-export async function getPortfolioStats(portfolioId: ObjectId | string) {
+export async function getPortfolioStats(portfolioId: ObjectId | string): Promise<{ totalPositions: number; totalAmount: number; totalValue: number; avgApr: number; positions: Position[] } | null> {
   const db = await getMongoDb();
   if (!db) return null;
 
   const id = typeof portfolioId === 'string' ? new ObjectId(portfolioId) : portfolioId;
 
   const positions = await getPortfolioPositions(id);
-  const totalAmount = positions.reduce((sum, p) => sum + p.amount, 0);
   const avgApr = positions.length > 0 ? positions.reduce((sum, p) => sum + (p.apr || 0), 0) / positions.length : 0;
+
+  // Fetch prices for all unique symbols to calculate USD value
+  let totalValue = 0;
+  try {
+    const uniqueSymbols = [...new Set(positions.map(p => p.symbol))];
+    if (uniqueSymbols.length > 0) {
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + 
+        uniqueSymbols.map(s => s.toLowerCase()).join(',') + 
+        '&vs_currencies=usd', { next: { revalidate: 60 } });
+      
+      if (priceResponse.ok) {
+        const priceData = await priceResponse.json();
+        positions.forEach(position => {
+          const symbolLower = position.symbol.toLowerCase();
+          if (priceData[symbolLower]?.usd) {
+            totalValue += position.amount * priceData[symbolLower].usd;
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch prices for portfolio stats:', error);
+  }
 
   return {
     totalPositions: positions.length,
-    totalAmount,
+    totalAmount: positions.reduce((sum, p) => sum + p.amount, 0), // Keep for backward compatibility
+    totalValue: totalValue, // USD value
     avgApr,
     positions,
   };
 }
 
-export async function syncWeb3Positions(portfolioId: ObjectId | string, userId: ObjectId | string, newPositions: any[]): Promise<void> {
+export async function syncWeb3Positions(portfolioId: ObjectId | string, userId: ObjectId | string, newPositions: Record<string, unknown>[]): Promise<void> {
   const db = await getMongoDb();
   if (!db) throw new Error('Database unavailable');
 
@@ -257,6 +280,8 @@ export async function syncWeb3Positions(portfolioId: ObjectId | string, userId: 
 
   // Insert new positions
   for (const pos of newPositions) {
-    await createPosition(portfolioId, userId, { ...pos, isActive: true });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, createdAt, updatedAt, portfolioId: _, userId: __, ...posData } = pos as unknown as Position;
+    await createPosition(portfolioId, userId, { ...posData, isActive: true });
   }
 }

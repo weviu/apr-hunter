@@ -31,13 +31,13 @@ export default function NewPositionPage() {
   const [assetSearch, setAssetSearch] = useState('');
   const [isAssetMenuOpen, setIsAssetMenuOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const assetMenuBlur = useRef<NodeJS.Timeout | null>(null);
-  const [aprData, setAprData] = useState<any[]>([]);
+  const assetMenuBlur = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [aprData, setAprData] = useState<Array<Record<string, unknown>>>([]);
 
   const assetsQuery = useQuery({
     queryKey: ['assets-autocomplete', formData.platform],
     queryFn: () =>
-      fetch(`${API_BASE}/api/apr/assets${formData.platform ? `?platform=${formData.platform}` : ''}`).then((res) => res.json()),
+      fetch(`${API_BASE}/api/apr/assets${formData.platform ? `?platform=${formData.platform}` : ''}`).then((res) => res.json()) as Promise<{ data: Array<Record<string, unknown>> }>,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -55,8 +55,8 @@ export default function NewPositionPage() {
           const data = await res.json();
           setAprData(Array.isArray(data?.data) ? data.data : []);
         }
-      } catch (err) {
-        console.error('Failed to fetch APR data:', err);
+      } catch (_err) {
+        console.error('Failed to fetch APR data:', _err);
       }
     }
     fetchAprData();
@@ -65,20 +65,20 @@ export default function NewPositionPage() {
   const assetOptions = useMemo(() => {
     const apiAssets = assetsQuery.data?.data || [];
     const platformAssets = formData.platform
-      ? (aprData || []).filter((d) => d.platform && d.platform.toLowerCase() === formData.platform.toLowerCase())
+      ? (aprData || []).filter((d: any) => d.platform && String(d.platform).toLowerCase() === String(formData.platform || '').toLowerCase())
       : [];
 
     const merged = new Map<string, string>();
 
     if (Array.isArray(apiAssets)) {
-      apiAssets.forEach((a: any) => {
-        if (a?.symbol) merged.set(a.symbol.toUpperCase(), a.name || a.symbol);
+      apiAssets.forEach((a: Record<string, unknown>) => {
+        if (a?.symbol) merged.set(String(a.symbol).toUpperCase(), String(a.name || a.symbol));
       });
     }
 
-    platformAssets.forEach((d: any) => {
+    platformAssets.forEach((d: Record<string, unknown>) => {
       if (d?.asset) {
-        merged.set(d.asset.toUpperCase(), d.asset.toUpperCase());
+        merged.set(String(d.asset).toUpperCase(), String(d.asset).toUpperCase());
       }
     });
 
@@ -106,18 +106,18 @@ export default function NewPositionPage() {
         const res = await fetch(`${API_BASE}/api/apr/asset/${assetSymbol}`, { signal: controller.signal });
         if (!res.ok) return;
         const data = await res.json();
-        const list: any[] = Array.isArray(data?.data) ? data.data : [];
+        const list: Array<Record<string, unknown>> = Array.isArray(data?.data) ? data.data : [];
         const platformMatch = list.find(
-          (item) =>
+          (item: any) =>
             item?.platform &&
-            item.platform.toLowerCase() === formData.platform.toLowerCase()
+            String(item.platform).toLowerCase() === String(formData.platform || '').toLowerCase()
         );
         const best = platformMatch || list[0];
-        if (best?.apr !== undefined) {
-          setFormData((prev) => ({ ...prev, entryApr: best.apr.toString() }));
+        if ((best as any)?.apr !== undefined) {
+          setFormData((prev) => ({ ...prev, entryApr: String((best as any).apr) }));
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err) {
+        if ((err as Record<string, unknown>)?.name === 'AbortError') return;
         console.error('Failed to fetch APR for asset:', err);
       }
     }
@@ -156,8 +156,8 @@ export default function NewPositionPage() {
         throw new Error(data.error || 'Failed to create position');
       }
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create position');
+    } catch (err) {
+      setError((err as Record<string, unknown>)?.message as string || 'Failed to create position');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
 import { getUserFromRequest } from '@/lib/api/server-auth';
 import {
   getPortfolioById,
   updatePortfolio,
   deletePortfolio,
   getPortfolioPositions,
-  createPosition,
   getPortfolioStats,
 } from '@/lib/db/repositories/portfolioRepository';
 
@@ -40,9 +38,10 @@ export async function GET(
       success: true,
       data: { portfolio, positions, stats },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch portfolio';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch portfolio' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -72,8 +71,8 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const { name, description, isActive } = body;
-    const updates: any = {};
+    const { name, description, isActive } = body as Record<string, unknown>;
+    const updates: Record<string, unknown> = {};
     if (name) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (isActive !== undefined) updates.isActive = isActive;
@@ -85,9 +84,10 @@ export async function PATCH(
       success: true,
       data: { portfolio: updated },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update portfolio';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to update portfolio' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -122,9 +122,10 @@ export async function DELETE(
       success: true,
       message: 'Portfolio deleted',
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete portfolio';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to delete portfolio' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

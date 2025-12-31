@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
 import { getUserFromRequest } from '@/lib/api/server-auth';
+import { Position } from '@/types/portfolio';
 import {
   getPortfolioById,
   getPortfolioPositions,
   createPosition,
   getPositionById,
-  updatePosition,
-  deletePosition,
   recordPositionSnapshot,
 } from '@/lib/db/repositories/portfolioRepository';
 import { fetchAprBySymbol } from '@/lib/exchanges/registry';
 
-async function enrichPositionWithApr(position: any) {
+async function enrichPositionWithApr(position: Position | Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
-    const liveData = await fetchAprBySymbol(position.asset);
+    const asset = typeof position.asset === 'string' ? position.asset : '';
+    const platform = typeof position.platform === 'string' ? position.platform : '';
+    const liveData = await fetchAprBySymbol(asset);
     const match = liveData.find(
-      (item) => item.platform?.toLowerCase() === position.platform?.toLowerCase()
+      (item) => item.platform?.toLowerCase() === platform.toLowerCase()
     );
     if (match?.apr !== undefined) {
       return {
@@ -26,10 +26,10 @@ async function enrichPositionWithApr(position: any) {
         aprLastUpdated: match.lastUpdated || new Date().toISOString(),
       };
     }
-  } catch (e) {
+  } catch {
     // fallback to stored APR
   }
-  return position;
+  return position as Record<string, unknown>;
 }
 
 export async function GET(
@@ -61,9 +61,10 @@ export async function GET(
       success: true,
       data: { positions: enriched },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch positions';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch positions' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -92,7 +93,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const { symbol, asset, platform, platformType, chain, amount, apr, riskLevel, source } = body;
+    const { symbol, asset, platform, platformType, chain, amount, apr, riskLevel, source } = body as Record<string, unknown>;
 
     if (!symbol || !asset || !platform || amount === undefined) {
       return NextResponse.json(
@@ -101,25 +102,34 @@ export async function POST(
       );
     }
 
-    const positionId = await createPosition(id, user._id, {
-      symbol: symbol.toUpperCase(),
-      asset: asset.toUpperCase(),
-      platform,
-      platformType,
-      chain,
+    const positionData: Omit<Position, '_id' | 'portfolioId' | 'userId' | 'createdAt' | 'updatedAt'> = {
+      symbol: String(symbol).toUpperCase(),
+      asset: String(asset).toUpperCase(),
+      platform: String(platform),
       amount: Number(amount),
-      apr: apr !== undefined ? Number(apr) : undefined,
-      riskLevel,
-      source,
       isActive: true,
-    });
+    };
+    
+    if (platformType) positionData.platformType = String(platformType);
+    if (chain) positionData.chain = String(chain);
+    if (apr !== undefined) positionData.apr = Number(apr);
+    if (riskLevel) positionData.riskLevel = String(riskLevel);
+    if (source) positionData.source = String(source);
+
+    const positionId = await createPosition(id, user._id, positionData);
 
     const position = await getPositionById(positionId);
+    if (!position) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to create position' },
+        { status: 500 }
+      );
+    }
     const enriched = await enrichPositionWithApr(position);
 
     // Record initial snapshot
     await recordPositionSnapshot(positionId, id, user._id, {
-      symbol: symbol.toUpperCase(),
+      symbol: String(symbol).toUpperCase(),
       amount: Number(amount),
       apr: apr !== undefined ? Number(apr) : undefined,
       capturedAt: new Date().toISOString(),
@@ -132,9 +142,10 @@ export async function POST(
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create position';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to create position' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

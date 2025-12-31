@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMongoDb } from '@/lib/db/mongodb';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getExchangeAdapter } from '@/lib/exchanges/cex-adapter-oauth';
 
 // GET /api/exchanges/connected
@@ -35,9 +36,10 @@ export async function GET(req: NextRequest) {
         all: ['Binance', 'OKX', 'KuCoin'],
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching connected exchanges:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to fetch connected exchanges' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to fetch connected exchanges';
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
 
@@ -82,8 +84,9 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: `${exchange} disconnected successfully`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error disconnecting exchange:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to disconnect exchange' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to disconnect exchange';
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

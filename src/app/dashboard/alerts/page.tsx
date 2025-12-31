@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowLeft, ArrowUp, Bell, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
@@ -33,13 +33,7 @@ export default function AlertsPage() {
     }
   }, [user, isLoading, router]);
 
-  useEffect(() => {
-    if (token) {
-      void fetchAlerts();
-    }
-  }, [token]);
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/alerts`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
       if (res.ok) {
@@ -55,7 +49,13 @@ export default function AlertsPage() {
     } finally {
       setLoadingAlerts(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      void fetchAlerts();
+    }
+  }, [token, fetchAlerts]);
 
   const toggleAlert = async (alertId: string, currentState: boolean) => {
     setUpdating(alertId);

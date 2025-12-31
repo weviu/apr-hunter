@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import crypto from 'crypto';
 
 export interface CexHolding {
@@ -113,7 +114,7 @@ class BinanceAdapter extends CexAdapter {
       }
 
       return holdings;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Binance holdings fetch error:', error);
       throw error;
     }
@@ -210,7 +211,7 @@ class OkxAdapter extends CexAdapter {
       }
 
       return holdings;
-    } catch (error: any) {
+    } catch (error) {
       console.error('OKX holdings fetch error:', error);
       throw error;
     }
@@ -305,7 +306,7 @@ class KuCoinAdapter extends CexAdapter {
       }
 
       return holdings;
-    } catch (error: any) {
+    } catch (error) {
       console.error('KuCoin holdings fetch error:', error);
       throw error;
     }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, History } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import {
   usePortfolio,
@@ -15,6 +15,7 @@ import {
 import { PositionTable } from '@/components/PositionTable';
 import { PositionForm } from '@/components/PositionForm';
 import { PositionHistory } from '@/components/PositionHistory';
+import { Header } from '@/components/Header';
 import { Position, Portfolio } from '@/types/portfolio';
 
 export default function PortfolioDetailPage() {
@@ -50,14 +51,14 @@ export default function PortfolioDetailPage() {
   const updateMutation = useUpdatePosition(portfolioId, editingPosition?._id as string);
   const deleteMutation = useDeletePosition(portfolioId);
 
-  const handleCreatePosition = async (data: any) => {
-    await createMutation.mutateAsync(data);
+  const handleCreatePosition = async (data: Record<string, unknown>) => {
+    await createMutation.mutateAsync(data as any);
     setShowForm(false);
   };
 
-  const handleUpdatePosition = async (data: any) => {
+  const handleUpdatePosition = async (data: Record<string, unknown>) => {
     if (!editingPosition) return;
-    await updateMutation.mutateAsync(data);
+    await updateMutation.mutateAsync(data as any);
     setEditingPosition(null);
   };
 
@@ -132,29 +133,31 @@ export default function PortfolioDetailPage() {
   const { portfolio, positions: initialPositions, stats } = portfolioData as {
     portfolio: Portfolio;
     positions: Position[];
-    stats: any;
+    stats: Record<string, unknown>;
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-emerald-400 hover:text-emerald-500 mb-6"
-        >
-          <ArrowLeft size={20} />
-          Back to Portfolios
-        </button>
+    <div className="min-h-screen bg-gray-900">
+      <Header />
+      <div className="py-8 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-500 mb-6"
+          >
+            <ArrowLeft size={20} />
+            Back to Portfolios
+          </button>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white">{portfolio.name}</h1>
-              {portfolio.description && (
-                <p className="text-gray-400 mt-2">{portfolio.description}</p>
-              )}
-            </div>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-white">{portfolio.name}</h1>
+                {portfolio.description && (
+                  <p className="text-gray-400 mt-2">{portfolio.description}</p>
+                )}
+              </div>
             <div className="text-right">
               <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${
                 portfolio.type === 'web3' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
@@ -176,15 +179,15 @@ export default function PortfolioDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
               <p className="text-sm text-gray-400">Total Positions</p>
-              <p className="text-2xl font-bold text-white">{stats.totalPositions}</p>
+              <p className="text-2xl font-bold text-white">{Number((stats as any).totalPositions || 0)}</p>
             </div>
             <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-sm text-gray-400">Total Amount</p>
-              <p className="text-2xl font-bold text-white">{stats.totalAmount.toFixed(4)}</p>
+              <p className="text-sm text-gray-400">Total Value (USD)</p>
+              <p className="text-2xl font-bold text-white">${Number((stats as any).totalValue || 0).toFixed(2)}</p>
             </div>
             <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
               <p className="text-sm text-gray-400">Average APR</p>
-              <p className="text-2xl font-bold text-emerald-400">{stats.avgApr.toFixed(2)}%</p>
+              <p className="text-2xl font-bold text-emerald-400">{Number((stats as any).avgApr || 0).toFixed(2)}%</p>
             </div>
           </div>
         )}
@@ -241,6 +244,7 @@ export default function PortfolioDetailPage() {
             onViewHistory={handleViewHistory}
             portfolioId={portfolioId}
             isLoading={positionsLoading}
+            portfolioType={portfolio.type}
           />
         </div>
 
@@ -259,6 +263,7 @@ export default function PortfolioDetailPage() {
             <PositionHistory snapshots={snapshots || []} isLoading={snapshotsLoading} />
           </div>
         )}
+        </div>
       </div>
     </div>
   );

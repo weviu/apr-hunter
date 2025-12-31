@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     .sort({ createdAt: -1 })
     .toArray();
 
-  return NextResponse.json({ success: true, alerts: alerts.map((a: any) => ({ ...a, id: a._id.toString() })) });
+  return NextResponse.json({ success: true, alerts: alerts.map((a: Record<string, unknown>) => ({ ...a, id: (a._id as { toString(): string }).toString() })) });
 }
 
 export async function POST(req: Request) {

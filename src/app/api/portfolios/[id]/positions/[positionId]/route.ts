@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
 import { getUserFromRequest } from '@/lib/api/server-auth';
+import { Position } from '@/types/portfolio';
 import {
   getPortfolioById,
   getPositionById,
@@ -10,11 +10,14 @@ import {
 } from '@/lib/db/repositories/portfolioRepository';
 import { fetchAprBySymbol } from '@/lib/exchanges/registry';
 
-async function enrichPositionWithApr(position: any) {
+async function enrichPositionWithApr(position: Position | Record<string, unknown> | null): Promise<Record<string, unknown>> {
+  if (!position) return {};
   try {
-    const liveData = await fetchAprBySymbol(position.asset);
+    const asset = typeof position.asset === 'string' ? position.asset : '';
+    const platform = typeof position.platform === 'string' ? position.platform : '';
+    const liveData = await fetchAprBySymbol(asset);
     const match = liveData.find(
-      (item) => item.platform?.toLowerCase() === position.platform?.toLowerCase()
+      (item) => item.platform?.toLowerCase() === platform.toLowerCase()
     );
     if (match?.apr !== undefined) {
       return {
@@ -24,10 +27,10 @@ async function enrichPositionWithApr(position: any) {
         aprLastUpdated: match.lastUpdated || new Date().toISOString(),
       };
     }
-  } catch (e) {
+  } catch {
     // fallback
   }
-  return position;
+  return position as Record<string, unknown>;
 }
 
 export async function GET(
@@ -57,16 +60,17 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Position not found' }, { status: 404 });
     }
 
-    const enriched = await enrichPositionWithApr(position);
+    const enriched = await enrichPositionWithApr(position || null);
     const history = await getPositionHistory(positionId);
 
     return NextResponse.json({
       success: true,
       data: { position: enriched, history },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch position';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch position' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -101,7 +105,7 @@ export async function PATCH(
     }
 
     const { amount, apr, riskLevel } = body;
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (amount !== undefined) updates.amount = Number(amount);
     if (apr !== undefined) updates.apr = Number(apr);
     if (riskLevel !== undefined) updates.riskLevel = riskLevel;
@@ -114,9 +118,10 @@ export async function PATCH(
       success: true,
       data: { position: enriched },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update position';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to update position' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -155,9 +160,10 @@ export async function DELETE(
       success: true,
       message: 'Position deleted',
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete position';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to delete position' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

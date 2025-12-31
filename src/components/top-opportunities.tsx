@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { TrendingUp, ExternalLink, Clock, RefreshCw, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
-import { AprTrendResponse, AprTrend } from '@/types/apr';
+import { AprTrendResponse } from '@/types/apr';
 
 interface AprData {
   _id?: string;

@@ -19,14 +19,14 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext<'/api/position
     return NextResponse.json({ success: false, error: 'Invalid id' }, { status: 400 });
   }
 
-  const authUserIdStr = String((auth.user as any)._id ?? '');
+  const authUserIdStr = String((auth.user as Record<string, unknown>)._id ?? '');
 
   const doc = await db.collection('positions').findOne({ _id: objectId });
   if (!doc) {
     return NextResponse.json({ success: false, error: 'Position not found' }, { status: 404 });
   }
 
-  const docUserIdStr = String((doc as any).userId ?? '');
+  const docUserIdStr = String((doc as Record<string, unknown>).userId ?? '');
   if (docUserIdStr !== authUserIdStr) {
     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }

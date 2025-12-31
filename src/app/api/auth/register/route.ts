@@ -14,9 +14,18 @@ function hashPassword(password: string) {
   return `${salt}:${hash}`;
 }
 
-function sanitizeUser(doc: any) {
+interface UserDoc {
+  _id: Record<string, unknown>;
+  email: string;
+  passwordHash: string;
+  sessionToken?: string;
+  [key: string]: unknown;
+}
+
+function sanitizeUser(doc: UserDoc | null): Omit<UserDoc, 'passwordHash' | 'sessionToken'> | null {
   if (!doc) return null;
-  const { passwordHash, sessionToken, ...rest } = doc;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { passwordHash: _ph, sessionToken: _st, ...rest } = doc;
   return {
     ...rest,
     _id: doc._id?.toString?.() ?? doc._id,
@@ -62,11 +71,12 @@ export async function POST(req: Request) {
     };
 
     const insert = await users.insertOne(doc);
-    const user = sanitizeUser({ ...doc, _id: insert.insertedId });
+    const user = sanitizeUser({ ...doc, _id: insert.insertedId } as unknown as UserDoc);
 
     return NextResponse.json({ success: true, data: { user, token: sessionToken } });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Registration failed' }, { status: 500 });
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Registration failed';
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
 

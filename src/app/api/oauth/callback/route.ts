@@ -46,10 +46,11 @@ export async function GET(req: NextRequest) {
     let tokenData;
     try {
       tokenData = await adapter.exchangeCodeForToken(code, clientId, clientSecret, redirectUri);
-    } catch (error: any) {
+    } catch (error) {
       console.error(`OAuth token exchange error for ${exchange}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return NextResponse.json(
-        { success: false, message: `Failed to exchange code: ${error.message}` },
+        { success: false, message: `Failed to exchange code: ${errorMessage}` },
         { status: 400 }
       );
     }
@@ -82,9 +83,10 @@ export async function GET(req: NextRequest) {
 
     // Redirect back to app with success message
     return NextResponse.redirect(`${req.nextUrl.origin}/dashboard/settings?exchange=${exchange}&connected=true`);
-  } catch (error: any) {
+  } catch (error) {
     console.error('OAuth callback error:', error);
-    return NextResponse.json({ success: false, message: error.message || 'OAuth callback failed' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'OAuth callback failed';
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
 
