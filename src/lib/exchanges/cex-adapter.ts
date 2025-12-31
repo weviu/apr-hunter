@@ -170,7 +170,8 @@ class KuCoinAdapter extends CexAdapter {
   }
 
   private encryptPassphrase(secretKey: string, passphrase: string): string {
-    return crypto.createHmac('sha256', secretKey).update(passphrase).digest('base64');
+    // KuCoin API now requires raw passphrase, not encrypted
+    return passphrase;
   }
 
   private async authenticatedRequest<T>(endpoint: string, apiKey: string, secretKey: string, passphrase: string, method = 'GET', body?: object): Promise<T> {

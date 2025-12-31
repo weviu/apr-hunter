@@ -200,12 +200,14 @@ export default function PortfolioDetailPage() {
                 onSubmit={handleUpdatePosition}
                 isLoading={updateMutation.isPending}
                 onCancel={handleCancelForm}
+                portfolioType={portfolio.type}
               />
             ) : (
               <PositionForm
                 onSubmit={handleCreatePosition}
                 isLoading={createMutation.isPending}
                 onCancel={handleCancelForm}
+                portfolioType={portfolio.type}
               />
             )}
           </div>

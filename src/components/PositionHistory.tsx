@@ -23,7 +23,7 @@ export function PositionHistory({ snapshots, isLoading }: PositionHistoryProps) 
 
   // Sort snapshots by date (newest first)
   const sortedSnapshots = [...snapshots].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
   );
 
   return (
@@ -35,11 +35,11 @@ export function PositionHistory({ snapshots, isLoading }: PositionHistoryProps) 
             ? snapshot.amount - prevSnapshot.amount
             : null;
         const aprChange =
-          prevSnapshot && snapshot.apr !== prevSnapshot.apr
+          prevSnapshot && snapshot.apr !== undefined && prevSnapshot.apr !== undefined
             ? snapshot.apr - prevSnapshot.apr
             : null;
 
-        const date = new Date(snapshot.createdAt);
+        const date = new Date(snapshot.capturedAt);
         const formattedDate = date.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -63,30 +63,14 @@ export function PositionHistory({ snapshots, isLoading }: PositionHistoryProps) 
                   <p className="text-xs text-gray-500">{formattedTime}</p>
                 </div>
               </div>
-              <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">
-                {snapshot.type || 'Initial'}
-              </span>
             </div>
 
             <div className="grid grid-cols-3 gap-3 mt-3">
               <div>
-                <p className="text-xs text-gray-400 mb-1">Amount</p>
-                <p className="text-sm font-semibold text-white">{snapshot.amount.toFixed(6)}</p>
-                {amountChange !== null && (
-                  <p
-                    className={`text-xs mt-1 flex items-center gap-1 ${
-                      amountChange >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}
-                  >
-                    {amountChange >= 0 ? (
-                      <TrendingUp size={12} />
-                    ) : (
-                      <TrendingDown size={12} />
-                    )}
-                    {amountChange > 0 ? '+' : ''}
-                    {amountChange.toFixed(6)}
-                  </p>
-                )}
+                <p className="text-xs text-gray-400 mb-1">Value</p>
+                <p className="text-sm font-semibold text-white">
+                  ${snapshot.value ? snapshot.value.toFixed(2) : '-'}
+                </p>
               </div>
 
               <div>
@@ -110,20 +94,7 @@ export function PositionHistory({ snapshots, isLoading }: PositionHistoryProps) 
                   </p>
                 )}
               </div>
-
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Risk Level</p>
-                <p className="text-sm font-semibold text-white capitalize">
-                  {snapshot.riskLevel || '-'}
-                </p>
-              </div>
             </div>
-
-            {snapshot.notes && (
-              <p className="text-xs text-gray-400 mt-3 italic">
-                Note: {snapshot.notes}
-              </p>
-            )}
           </div>
         );
       })}

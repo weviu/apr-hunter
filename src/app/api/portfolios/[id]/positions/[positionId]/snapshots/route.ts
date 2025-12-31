@@ -6,11 +6,14 @@ import { NextRequest, NextResponse } from 'next/server';
 // Fetch position snapshots to view history
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string; positionId: string } }
+  { params }: { params: Promise<{ id: string; positionId: string }> }
 ) {
   try {
     const db = await getMongoDb();
-    const { id: portfolioId, positionId } = await Promise.resolve(params);
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database connection failed' }, { status: 500 });
+    }
+    const { id: portfolioId, positionId } = await params;
 
     // Get user from session (via header)
     const token = req.headers.get('Authorization')?.replace('Bearer ', '');
