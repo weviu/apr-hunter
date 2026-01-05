@@ -57,12 +57,42 @@ export function useCreatePortfolio() {
       description?: string;
       type: 'web2' | 'web3';
       walletAddress?: string;
+      detectedPositions?: Position[];
     }) => {
-      const res = await api.post<ApiResponse<{ portfolio: Portfolio }>>('/api/portfolios', data);
-      return res.data.data?.portfolio as Portfolio;
+      // Extract detected positions for separate API call
+      const { detectedPositions, ...portfolioData } = data;
+
+      // Create portfolio
+      const res = await api.post<ApiResponse<{ portfolio: Portfolio }>>('/api/portfolios', portfolioData);
+      const portfolio = res.data.data?.portfolio as Portfolio;
+
+      // If Web3 and has detected positions, save them
+      if (portfolio && detectedPositions && detectedPositions.length > 0) {
+        try {
+          // Save each detected position
+          for (const position of detectedPositions) {
+            await api.post(`/api/portfolios/${portfolio._id}/positions`, {
+              symbol: position.symbol,
+              asset: position.asset,
+              platform: position.platform,
+              platformType: position.platformType,
+              chain: position.chain,
+              amount: position.amount,
+              apr: position.apr,
+              source: position.source || 'web3-detection',
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to save some detected positions:', err);
+          // Don't fail the entire operation if positions fail to save
+        }
+      }
+
+      return portfolio;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PORTFOLIOS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [POSITIONS_KEY] });
     },
   });
 }

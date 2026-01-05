@@ -1,10 +1,11 @@
-// next.config.js - REVERT TO ORIGINAL/EMPTY
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove the custom env loading logic
-  experimental: {
-    turbo: {}
-  }
+  // Disable image optimization to reduce server load
+  images: {
+    unoptimized: true,
+  },
 };
 
 module.exports = nextConfig;
+

@@ -1,8 +1,10 @@
-# pnpm-workspace.yaml
 packages:
-  - '.'  # Root package
-  - 'packages/*'  # If you have any sub-packages
+  - .
+  - packages/*
 
 onlyBuiltDependencies:
+  - bufferutil
+  - secp256k1
   - sharp
   - unrs-resolver
+  - utf-8-validate
