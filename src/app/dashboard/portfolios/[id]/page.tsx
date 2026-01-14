@@ -17,6 +17,9 @@ import { PositionForm } from '@/components/PositionForm';
 import { PositionHistory } from '@/components/PositionHistory';
 import { Header } from '@/components/Header';
 import { Position, Portfolio } from '@/types/portfolio';
+import { Web3PositionsList } from '@/components/Web3PositionsList';
+import { useWeb3PositionDetection } from '@/lib/hooks/useWeb3PositionDetection';
+import { groupPositionsByProtocol } from '@/types/web3';
 
 export default function PortfolioDetailPage() {
   const params = useParams();
@@ -27,6 +30,8 @@ export default function PortfolioDetailPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
   const [historyPositionId, setHistoryPositionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'positions' | 'web3'>('positions');
+  const [mounted, setMounted] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -34,6 +39,10 @@ export default function PortfolioDetailPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: portfolioData, isLoading: portfolioLoading, error: portfolioError } = usePortfolio(portfolioId, {
     enabled: !!user,
@@ -50,6 +59,9 @@ export default function PortfolioDetailPage() {
   const createMutation = useCreatePosition(portfolioId);
   const updateMutation = useUpdatePosition(portfolioId, editingPosition?._id as string);
   const deleteMutation = useDeletePosition(portfolioId);
+
+  // Web3 position detection hook
+  const { data: web3Positions } = useWeb3PositionDetection();
 
   const handleCreatePosition = async (data: Record<string, unknown>) => {
     await createMutation.mutateAsync(data as any);
@@ -216,36 +228,86 @@ export default function PortfolioDetailPage() {
           </div>
         )}
 
-        {/* Positions Section */}
+        {/* Positions/Web3 Tabs Section */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Positions</h2>
-            {!showForm && !editingPosition && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition"
-              >
-                <Plus size={20} />
-                Add Position
-              </button>
-            )}
+          {/* Tab Navigation */}
+          <div className="flex gap-4 mb-6 border-b border-gray-700 pb-4">
+            <button
+              onClick={() => setActiveTab('positions')}
+              className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === 'positions'
+                  ? 'border-emerald-500 text-emerald-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Positions
+            </button>
+            <button
+              onClick={() => setActiveTab('web3')}
+              className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === 'web3'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Web3 Positions
+            </button>
           </div>
 
-          {positionsError && (
-            <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded mb-4">
-              Failed to load positions: {positionsError.message}
-            </div>
+          {/* Positions Tab */}
+          {activeTab === 'positions' && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Positions</h2>
+                {!showForm && !editingPosition && (
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition"
+                  >
+                    <Plus size={20} />
+                    Add Position
+                  </button>
+                )}
+              </div>
+
+              {positionsError && (
+                <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded mb-4">
+                  Failed to load positions: {positionsError.message}
+                </div>
+              )}
+
+              <PositionTable
+                positions={positions || initialPositions || []}
+                onEdit={handleEditPosition}
+                onDelete={handleDeletePosition}
+                onViewHistory={handleViewHistory}
+                portfolioId={portfolioId}
+                isLoading={positionsLoading}
+                portfolioType={portfolio.type}
+              />
+            </>
           )}
 
-          <PositionTable
-            positions={positions || initialPositions || []}
-            onEdit={handleEditPosition}
-            onDelete={handleDeletePosition}
-            onViewHistory={handleViewHistory}
-            portfolioId={portfolioId}
-            isLoading={positionsLoading}
-            portfolioType={portfolio.type}
-          />
+          {/* Web3 Positions Tab */}
+          {activeTab === 'web3' && mounted && (
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-6">Detected Web3 Positions</h2>
+              {web3Positions && web3Positions.length > 0 ? (
+                <Web3PositionsList
+                  groups={groupPositionsByProtocol(web3Positions)}
+                  onImport={(position) => {
+                    console.log('Importing position to portfolio:', position);
+                    // TODO: Implement actual import logic
+                  }}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-400 mb-4">No Web3 positions detected</p>
+                  <p className="text-sm text-gray-500">Scan your wallet from the dashboard to find Web3 positions</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Position History Section */}

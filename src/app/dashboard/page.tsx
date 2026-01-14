@@ -11,9 +11,11 @@ import {
   TrendingUp,
   Wallet,
   FolderPlus,
+  Zap,
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/lib/auth';
+import { Web3PositionScanner } from '@/components/Web3PositionScanner';
 
 type Portfolio = {
   _id: string;
@@ -41,6 +43,7 @@ export default function DashboardPage() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loadingPortfolios, setLoadingPortfolios] = useState(true);
+  const [web3ScannerOpen, setWeb3ScannerOpen] = useState(false);
 
   const fetchPortfolios = useCallback(async () => {
     setLoadingPortfolios(true);
@@ -185,6 +188,32 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
+            {/* Web3 Position Scanner Card */}
+            <div className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 rounded-xl border border-blue-700/50 mb-8 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <Zap className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-white">Web3 Position Scanner</h2>
+                  </div>
+                  <p className="text-sm text-gray-300">Scan your wallet to detect and import Web3 positions from Yearn, Aave, and more</p>
+                </div>
+                <button
+                  onClick={() => setWeb3ScannerOpen(true)}
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                >
+                  <Zap size={18} />
+                  Scan Wallet
+                </button>
+              </div>
+            </div>
+
+            <Web3PositionScanner
+              isOpen={web3ScannerOpen}
+              onClose={() => setWeb3ScannerOpen(false)}
+            />
             <div className="bg-gray-800 rounded-xl border border-gray-700">
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <div>
