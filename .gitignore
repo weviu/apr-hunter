@@ -36,3 +36,4 @@ Thumbs.db
 .turbo/
 
 package.json
+ca.crt
