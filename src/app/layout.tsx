@@ -4,11 +4,15 @@ import './globals.css';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
 import { AuthProvider } from '@/lib/auth';
 import { Web3Provider } from '@/components/Web3Provider';
+import { initializeServer } from '@/lib/init-server';
 
 const sora = Sora({
   subsets: ['latin'],
   variable: '--font-sora',
 });
+
+// Initialize server-side services
+initializeServer().catch(console.error);
 
 export const metadata: Metadata = {
   title: 'APR Hunter | Lazy Investor Yield Radar',

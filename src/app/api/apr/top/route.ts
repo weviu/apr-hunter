@@ -7,43 +7,61 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = Number(searchParams.get('limit') ?? 10);
 
+    // Prefer database first (cached, fast)
+    const dbData = await getTopAprOpportunities(limit);
+    
+    // If DB has fresh data within last 60 seconds, use it immediately
+    if (dbData && dbData.length > 0) {
+      const latestFetch = (dbData[0] as any)?.fetchedAt;
+      if (latestFetch) {
+        const ageMs = Date.now() - new Date(latestFetch).getTime();
+        if (ageMs < 60000) {
+          // Data is recent, use it directly
+          return NextResponse.json({
+            data: dbData,
+            source: 'cache',
+          });
+        }
+      }
+    }
+
+    // If DB is stale or empty, fetch live data as fallback
     const live = await fetchTopAprOpportunities(limit);
-    const historic = await getTopAprOpportunities(limit);
-
-    const liveKeys = new Set(live.map((item) => `${item.platform}-${item.symbol}`));
-    const filteredHistoric = historic.filter((item) => liveKeys.has(`${item.platform}-${item.symbol}`));
-
-    const combined = [...live, ...filteredHistoric].reduce<Map<string, Record<string, unknown>>>((acc, item) => {
-      if (!item) return acc;
-      const key = `${item.platform}-${item.symbol}`;
-      // prefer freshest, then highest apr
-      const existing = acc.get(key);
-      const existingRec = existing as unknown as Record<string, unknown>;
-      const itemRec = item as unknown as Record<string, unknown>;
-      const existingFetched = existingRec?.fetchedAt;
-      const itemFetched = itemRec?.fetchedAt;
-      const existingApr = Number(existingRec?.apr || 0);
-      const itemApr = Number(itemRec?.apr || 0);
-      if (
-        !existing ||
-        new Date(String(existingRec.lastUpdated || existingFetched || 0)) < new Date(String(itemRec.lastUpdated || itemFetched || 0)) ||
-        (existingRec.lastUpdated === itemRec.lastUpdated && existingApr < itemApr)
-      ) {
-        acc.set(key, {
-          ...(item as unknown as Record<string, unknown>),
-          lastUpdated: itemRec.lastUpdated || itemFetched || new Date().toISOString(),
+    
+    if (!live || live.length === 0) {
+      // No live data, return what we have from DB
+      if (dbData && dbData.length > 0) {
+        return NextResponse.json({
+          data: dbData,
+          source: 'cache-stale',
         });
       }
-      return acc;
-    }, new Map());
-
-    const sorted = Array.from(combined.values()).sort((a, b) => Number(b.apr || 0) - Number(a.apr || 0)).slice(0, limit);
+      return NextResponse.json({
+        data: [],
+        source: 'none',
+      });
+    }
 
     return NextResponse.json({
-      data: sorted,
+      data: live,
+      source: 'live',
     });
   } catch (error) {
     console.error('APR top error', error);
+    
+    // On error, try to return cached data
+    try {
+      const dbData = await getTopAprOpportunities(Number(new URL(request.url).searchParams.get('limit') ?? 10));
+      if (dbData && dbData.length > 0) {
+        return NextResponse.json({
+          data: dbData,
+          source: 'cache-fallback',
+        });
+      }
+    } catch {
+      // ignore
+    }
+
     return NextResponse.json({ error: 'Unable to load top opportunities' }, { status: 500 });
   }
 }

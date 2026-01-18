@@ -10,26 +10,72 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/apr/asse
     }
 
     const normalizedSymbol = symbol.toUpperCase();
-    const live = await fetchAprBySymbol(normalizedSymbol);
-    const historic = await getLatestAprForAsset(normalizedSymbol);
-    const merged = [...live, ...historic];
 
-    const deduped = Array.from(
-      merged.reduce<Map<string, (typeof merged)[number]>>((acc, item) => {
-        const key = `${item.platform}-${item.symbol}-${item.lockPeriod ?? 'flex'}`;
-        if (!acc.has(key) || new Date(acc.get(key)!.lastUpdated) < new Date(item.lastUpdated)) {
-          acc.set(key, item);
+    // Prefer database first (cached, fast, instant load)
+    const dbData = await getLatestAprForAsset(normalizedSymbol);
+
+    // If DB has fresh data within last 60 seconds, use it immediately
+    if (dbData && dbData.length > 0) {
+      const latestFetch = (dbData[0] as any)?.fetchedAt;
+      if (latestFetch) {
+        const ageMs = Date.now() - new Date(latestFetch).getTime();
+        if (ageMs < 60000) {
+          // Data is recent, use it directly
+          const sorted = dbData.sort((a, b) => b.apr - a.apr);
+          return NextResponse.json({
+            data: sorted,
+            asset: normalizedSymbol,
+            source: 'cache',
+          });
         }
-        return acc;
-      }, new Map()).values(),
-    ).sort((a, b) => b.apr - a.apr);
+      }
+    }
+
+    // If DB is stale or empty, fetch live data as fallback
+    const live = await fetchAprBySymbol(normalizedSymbol);
+
+    if (!live || live.length === 0) {
+      // No live data, return what we have from DB
+      if (dbData && dbData.length > 0) {
+        const sorted = dbData.sort((a, b) => b.apr - a.apr);
+        return NextResponse.json({
+          data: sorted,
+          asset: normalizedSymbol,
+          source: 'cache-stale',
+        });
+      }
+      return NextResponse.json({
+        data: [],
+        asset: normalizedSymbol,
+        source: 'none',
+      });
+    }
 
     return NextResponse.json({
-      data: deduped,
+      data: live.sort((a, b) => b.apr - a.apr),
       asset: normalizedSymbol,
+      source: 'live',
     });
   } catch (error) {
     console.error('APR asset error', error);
+    
+    // On error, try to return cached data
+    try {
+      const { symbol } = await ctx.params;
+      const normalizedSymbol = symbol.toUpperCase();
+      const dbData = await getLatestAprForAsset(normalizedSymbol);
+      if (dbData && dbData.length > 0) {
+        const sorted = dbData.sort((a, b) => b.apr - a.apr);
+        return NextResponse.json({
+          data: sorted,
+          asset: normalizedSymbol,
+          source: 'cache-fallback',
+        });
+      }
+    } catch {
+      // ignore
+    }
+
     return NextResponse.json({ error: 'Unable to load asset APR data' }, { status: 500 });
   }
 }
