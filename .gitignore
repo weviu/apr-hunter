@@ -19,6 +19,7 @@ out/
 .env.production
 .env.test
 .env.secrets
+ca.crt
 
 # IDE
 .vscode/
@@ -36,4 +37,3 @@ Thumbs.db
 .turbo/
 
 package.json
-ca.crt
