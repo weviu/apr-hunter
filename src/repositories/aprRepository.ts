@@ -1,0 +1,252 @@
+import { ObjectId } from 'mongodb';
+import { getMongoDb } from '@/lib/db/mongodb';
+import { AprSnapshot, AprHistoryEntry, AprTrendResult } from '@/types/apr';
+
+const SNAPSHOTS = 'apr_snapshots';
+const HISTORY = 'apr_history';
+
+// ─── Internal document types ─────────────────────────────────────────────────
+
+interface SnapshotDoc {
+  _id: ObjectId;
+  exchange: string;
+  asset: string;
+  product: string | null;
+  apr: number;
+  apy: number | null;
+  minAmount: number | null;
+  currency: string;
+  source: 'live' | 'sample';
+  syncedAt: Date;
+}
+
+interface HistoryDoc {
+  _id: ObjectId;
+  exchange: string;
+  asset: string;
+  apr: number;
+  recordedAt: Date;
+}
+
+// ─── Serialisation helpers ────────────────────────────────────────────────────
+
+function toSnapshot(doc: SnapshotDoc): AprSnapshot {
+  return {
+    id: doc._id.toHexString(),
+    exchange: doc.exchange,
+    asset: doc.asset,
+    product: doc.product,
+    apr: doc.apr,
+    apy: doc.apy,
+    minAmount: doc.minAmount,
+    currency: doc.currency,
+    source: doc.source,
+    syncedAt: doc.syncedAt.toISOString(),
+  };
+}
+
+function toHistoryEntry(doc: HistoryDoc): AprHistoryEntry {
+  return {
+    id: doc._id.toHexString(),
+    exchange: doc.exchange,
+    asset: doc.asset,
+    apr: doc.apr,
+    recordedAt: doc.recordedAt.toISOString(),
+  };
+}
+
+// ─── Write operations ─────────────────────────────────────────────────────────
+
+export type SnapshotInsert = Omit<AprSnapshot, 'id'>;
+
+/** Bulk-insert APR snapshots. Ignores partial failures (ordered: false). */
+export async function saveSnapshots(snapshots: SnapshotInsert[]): Promise<void> {
+  const db = await getMongoDb();
+  if (!db || snapshots.length === 0) return;
+  const now = new Date();
+  await db.collection(SNAPSHOTS).insertMany(
+    snapshots.map((s) => ({ ...s, syncedAt: now })),
+    { ordered: false },
+  );
+}
+
+/**
+ * Upsert hourly history buckets: one row per (exchange, asset, hour).
+ * Calling this multiple times within the same hour is idempotent.
+ */
+export async function appendHistory(
+  entries: Array<{ exchange: string; asset: string; apr: number }>,
+): Promise<void> {
+  const db = await getMongoDb();
+  if (!db || entries.length === 0) return;
+
+  const hourBucket = new Date();
+  hourBucket.setUTCMinutes(0, 0, 0);
+
+  const ops = entries.map((e) => ({
+    updateOne: {
+      filter: { exchange: e.exchange, asset: e.asset, hourBucket },
+      update: {
+        $set: { apr: e.apr, recordedAt: new Date() },
+        $setOnInsert: { exchange: e.exchange, asset: e.asset, hourBucket },
+      },
+      upsert: true,
+    },
+  }));
+
+  await db.collection(HISTORY).bulkWrite(ops, { ordered: false });
+}
+
+// ─── Read operations ──────────────────────────────────────────────────────────
+
+/** Latest snapshot per (exchange, asset) pair, optionally filtered. */
+export async function getLatestAll(filters?: {
+  exchange?: string;
+  asset?: string;
+}): Promise<AprSnapshot[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const match: Record<string, unknown> = {};
+  if (filters?.exchange) match.exchange = filters.exchange;
+  if (filters?.asset) match.asset = filters.asset.toUpperCase();
+
+  const pipeline = [
+    ...(Object.keys(match).length ? [{ $match: match }] : []),
+    { $sort: { syncedAt: -1 } },
+    { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
+    { $replaceRoot: { newRoot: '$doc' } },
+    { $sort: { apr: -1 } },
+  ];
+
+  const docs = await db.collection(SNAPSHOTS).aggregate<SnapshotDoc>(pipeline).toArray();
+  return docs.map(toSnapshot);
+}
+
+/** Top N rates across all exchanges, sorted by APR descending. */
+export async function getTop(limit = 10): Promise<AprSnapshot[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const pipeline = [
+    { $sort: { syncedAt: -1 } },
+    { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
+    { $replaceRoot: { newRoot: '$doc' } },
+    { $sort: { apr: -1 } },
+    { $limit: limit },
+  ];
+
+  const docs = await db.collection(SNAPSHOTS).aggregate<SnapshotDoc>(pipeline).toArray();
+  return docs.map(toSnapshot);
+}
+
+/** Distinct asset names that have at least one snapshot. */
+export async function getUniqueAssets(): Promise<string[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+  return db.collection(SNAPSHOTS).distinct('asset');
+}
+
+/** Latest rate per exchange for a specific asset. */
+export async function getByAsset(asset: string): Promise<AprSnapshot[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const pipeline = [
+    { $match: { asset: asset.toUpperCase() } },
+    { $sort: { syncedAt: -1 } },
+    { $group: { _id: '$exchange', doc: { $first: '$$ROOT' } } },
+    { $replaceRoot: { newRoot: '$doc' } },
+    { $sort: { apr: -1 } },
+  ];
+
+  const docs = await db.collection(SNAPSHOTS).aggregate<SnapshotDoc>(pipeline).toArray();
+  return docs.map(toSnapshot);
+}
+
+/** Historical APR entries, optionally filtered by exchange/asset/days. */
+export async function getHistory(filters?: {
+  exchange?: string;
+  asset?: string;
+  days?: number;
+}): Promise<AprHistoryEntry[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const match: Record<string, unknown> = {};
+  if (filters?.exchange) match.exchange = filters.exchange;
+  if (filters?.asset) match.asset = filters.asset.toUpperCase();
+  if (filters?.days) {
+    const since = new Date();
+    since.setDate(since.getDate() - filters.days);
+    match.recordedAt = { $gte: since };
+  }
+
+  const docs = await db
+    .collection<HistoryDoc>(HISTORY)
+    .find(match)
+    .sort({ recordedAt: -1 })
+    .limit(2000)
+    .toArray();
+
+  return docs.map(toHistoryEntry);
+}
+
+/**
+ * For each (exchange, asset) pair, compare the most recent rate to the rate
+ * 24 hours ago and return the direction of change.
+ */
+export async function getTrends(limit = 10): Promise<AprTrendResult[]> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const cutoff = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25h window
+
+  const pipeline = [
+    { $match: { recordedAt: { $gte: cutoff } } },
+    { $sort: { recordedAt: -1 } },
+    {
+      $group: {
+        _id: { exchange: '$exchange', asset: '$asset' },
+        latest: { $first: '$apr' },
+        oldest: { $last: '$apr' },
+      },
+    },
+    {
+      $project: {
+        exchange: '$_id.exchange',
+        asset: '$_id.asset',
+        currentApr: '$latest',
+        previousApr: '$oldest',
+        delta: { $subtract: ['$latest', '$oldest'] },
+      },
+    },
+    { $sort: { delta: -1 } },
+    { $limit: limit },
+  ];
+
+  const rows = await db.collection(HISTORY).aggregate(pipeline).toArray();
+
+  return rows.map((r) => ({
+    exchange: r.exchange as string,
+    asset: r.asset as string,
+    currentApr: r.currentApr as number,
+    previousApr: r.previousApr as number,
+    delta: r.delta as number,
+    direction: (r.delta as number) > 0.001
+      ? 'up'
+      : (r.delta as number) < -0.001
+      ? 'down'
+      : 'flat',
+  }));
+}
+
+/** The most recent syncedAt across all snapshots; used by the health endpoint. */
+export async function getLatestSyncTimestamp(): Promise<Date | null> {
+  const db = await getMongoDb();
+  if (!db) return null;
+  const doc = await db
+    .collection(SNAPSHOTS)
+    .findOne({}, { sort: { syncedAt: -1 }, projection: { syncedAt: 1 } });
+  return doc?.syncedAt instanceof Date ? doc.syncedAt : null;
+}
