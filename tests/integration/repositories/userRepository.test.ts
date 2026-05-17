@@ -47,7 +47,7 @@ describe('userRepository', () => {
     expect(found?.email).toBe('alice@example.com');
     // passwordHash should be stored but session fields absent
     expect(found?.passwordHash).toBeTruthy();
-    expect((found as Record<string, unknown>).sessionToken).toBeUndefined();
+    expect((found as unknown as Record<string, unknown>)['sessionToken']).toBeUndefined();
   });
 
   it('returns null for unknown email', async () => {

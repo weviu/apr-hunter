@@ -57,7 +57,8 @@ function toHistoryEntry(doc: HistoryDoc): AprHistoryEntry {
 
 // ─── Write operations ─────────────────────────────────────────────────────────
 
-export type SnapshotInsert = Omit<AprSnapshot, 'id'>;
+/** Input type for inserting snapshots — uses Date for syncedAt (converted to ISO by the DB layer). */
+export type SnapshotInsert = Omit<AprSnapshot, 'id' | 'syncedAt'> & { syncedAt: Date };
 
 /** Bulk-insert APR snapshots. Ignores partial failures (ordered: false). */
 export async function saveSnapshots(snapshots: SnapshotInsert[]): Promise<void> {

@@ -30,15 +30,11 @@ export interface Position {
 }
 
 export interface PositionSnapshot {
-  _id?: ObjectId | string;
-  positionId: ObjectId | string;
-  portfolioId: ObjectId | string;
-  userId: ObjectId | string;
-  symbol: string;
-  amount: number;
-  value?: number; // USD value at snapshot time
-  apr?: number;
-  capturedAt: string;
+  id: string;
+  positionId: string;
+  apr: number;
+  value: number | null;
+  recordedAt: string;
 }
 
 export interface PortfolioStats {
