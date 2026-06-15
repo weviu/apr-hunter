@@ -36,4 +36,4 @@ package.json
 
 # Docs
 REBUILD_ANALYSIS.md
-BUILD_PLAN.md
+BUILD_PLAN.md.env.secrets
