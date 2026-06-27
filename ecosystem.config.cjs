@@ -2,7 +2,10 @@ const path = require('node:path');
 
 module.exports = {
   apps: [
-    // ─── Next.js app ──────────────────────────────────────────────────────────
+    // ─── Next.js app (single process) ───────────────────────────────────────────
+    // The APR sync runs inside this process via src/instrumentation.ts, which
+    // schedules runAprSync() every 15 minutes at server startup. No separate
+    // cron process is needed — see that file for the rationale.
     {
       name: 'apr-hunter-v2',
       cwd: __dirname,
@@ -12,22 +15,6 @@ module.exports = {
       instances: 1,
       autorestart: true,
       max_memory_restart: '512M',
-      env: {
-        NODE_ENV: 'production',
-      },
-    },
-
-    // ─── APR sync cron (every 15 minutes) ────────────────────────────────────
-    // Runs scripts/trigger-apr-sync.cjs, which POSTs to /api/cron/refresh-apr.
-    // cron_restart: PM2 restarts (re-runs) the script on the given schedule.
-    // autorestart: false means PM2 does not restart it on non-cron exits.
-    {
-      name: 'apr-hunter-v2-cron',
-      cwd: __dirname,
-      script: 'scripts/trigger-apr-sync.cjs',
-      cron_restart: '*/15 * * * *',
-      autorestart: false,
-      watch: false,
       env: {
         NODE_ENV: 'production',
       },
