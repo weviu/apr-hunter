@@ -57,10 +57,9 @@ describe('portfolioRepository', () => {
     const list = await findPortfoliosByUserId(userId);
     expect(list.find((p) => p.id === id)).toBeUndefined();
 
-    // But findById still returns the record with deletedAt set
+    // findById also treats soft-deleted portfolios as not found
     const found = await findPortfolioById(id);
-    expect(found).not.toBeNull();
-    expect(found?.deletedAt).not.toBeNull();
+    expect(found).toBeNull();
   });
 
   it('softDelete on already-deleted portfolio returns false', async () => {

@@ -9,7 +9,10 @@ export default defineConfig({
     setupFiles: ['./tests/helpers/setup.ts'],
     // Unit and integration tests run via `pnpm test`
     // Smoke tests run via `pnpm test:smoke` (requires server running)
-    exclude: ['node_modules', 'tests/smoke/**'],
+    // Exclude all node_modules (including ones vendored into .next during the
+    // Next.js build — e.g. bcrypt ships its own *.test.js files), the .next
+    // build output, and smoke tests (which require a running server).
+    exclude: ['**/node_modules/**', '.next/**', 'tests/smoke/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

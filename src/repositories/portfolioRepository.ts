@@ -60,10 +60,15 @@ export async function findPortfoliosByUserId(userId: string | ObjectId): Promise
   return docs.map(toPortfolio);
 }
 
+/**
+ * Looks up a single active (non-deleted) portfolio by id.
+ * Soft-deleted portfolios (deletedAt set) are treated as not found, keeping
+ * single-record reads consistent with the list query in findPortfoliosByUserId.
+ */
 export async function findPortfolioById(id: string | ObjectId): Promise<Portfolio | null> {
   const db = await getMongoDb();
   if (!db) return null;
-  const doc = await db.collection<PortfolioDoc>(COL).findOne({ _id: toId(id) });
+  const doc = await db.collection<PortfolioDoc>(COL).findOne({ _id: toId(id), deletedAt: null });
   return doc ? toPortfolio(doc) : null;
 }
 
