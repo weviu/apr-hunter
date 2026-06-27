@@ -13,8 +13,9 @@ dist/
 .next/
 out/
 
-# Environment variables
-.env.*
+# Environment variables + certificate
+.env.secrets
+.env
 ca.crt
 
 # IDE
