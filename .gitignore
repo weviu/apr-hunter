@@ -36,5 +36,4 @@ Thumbs.db
 package.json
 
 # Docs
-REBUILD_ANALYSIS.md
-BUILD_PLAN.md
+docs/
