@@ -7,7 +7,7 @@ module.exports = {
     // schedules runAprSync() every 15 minutes at server startup. No separate
     // cron process is needed — see that file for the rationale.
     {
-      name: 'apr-hunter-v2',
+      name: 'apr-hunter',
       cwd: __dirname,
       script: path.join(__dirname, 'node_modules/next/dist/bin/next'),
       args: 'start',
