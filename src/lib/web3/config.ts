@@ -31,7 +31,7 @@ const amoy = defineChain({
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'APR Hunter',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'default_project_id',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default_project_id',
   chains: [
     mainnet,
     polygon,

@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
+const btnBase =
+  'inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition';
+
 export function WalletConnect() {
   useEffect(() => {
     const style = document.createElement('style');
@@ -19,7 +22,9 @@ export function WalletConnect() {
   }, []);
 
   return (
-    <div>
+    // Reserve a stable minimum width so the nav doesn't reflow while RainbowKit
+    // (re)initialises on navigation — the cause of the "buttons jump right" flicker.
+    <div className="flex min-w-[136px] justify-end">
       <ConnectButton.Custom>
         {(renderProps) => {
           const { account, chain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted } = renderProps;
@@ -30,89 +35,61 @@ export function WalletConnect() {
             chain &&
             (!authenticationStatus || authenticationStatus === 'authenticated');
 
+          // Hold the space (no visible content) until mounted to avoid layout shift.
+          if (!mounted) {
+            return <div className="h-8" aria-hidden />;
+          }
+
+          if (!connected) {
+            return (
+              <button
+                onClick={openConnectModal}
+                type="button"
+                className={`${btnBase} bg-accent text-accent-fg hover:bg-accent-hover`}
+              >
+                Connect Wallet
+              </button>
+            );
+          }
+
+          if (chain.unsupported) {
+            return (
+              <button
+                onClick={openChainModal}
+                type="button"
+                className={`${btnBase} bg-danger text-white hover:opacity-90`}
+              >
+                Wrong Network
+              </button>
+            );
+          }
+
           return (
-            <div>
-              {mounted && (
-                <>
-                  {(() => {
-                    if (!connected) {
-                      return (
-                        <button
-                          onClick={openConnectModal}
-                          type="button"
-                          className="px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-lg font-medium transition-colors text-sm"
-                        >
-                          Connect Wallet
-                        </button>
-                      );
-                    }
-
-                    if (chain.unsupported) {
-                      return (
-                        <button
-                          onClick={openChainModal}
-                          type="button"
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
-                        >
-                          Wrong Network
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button
-                          onClick={openChainModal}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            color: '#fff',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                          }}
-                          type="button"
-                        >
-                          {chain.hasIcon && (
-                            <div
-                              style={{
-                                background: chain.iconBackground,
-                                width: 12,
-                                height: 12,
-                                borderRadius: 999,
-                                overflow: 'hidden',
-                                marginRight: 8,
-                              }}
-                            >
-                              {chain.iconUrl && (
-                                <Image
-                                  alt={chain.name ?? 'Chain icon'}
-                                  src={chain.iconUrl}
-                                  width={12}
-                                  height={12}
-                                />
-                              )}
-                            </div>
-                          )}
-                          {chain.name}
-                        </button>
-                        <button
-                          onClick={openAccountModal}
-                          type="button"
-                          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors text-sm"
-                        >
-                          {account.displayName}
-                        </button>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
+            <div className="flex gap-2">
+              <button
+                onClick={openChainModal}
+                type="button"
+                className={`${btnBase} gap-2 border border-hairline bg-surface text-fg hover:bg-surface-hover hover:border-hairline-strong`}
+              >
+                {chain.hasIcon && (
+                  <span
+                    className="h-3 w-3 overflow-hidden rounded-full"
+                    style={{ background: chain.iconBackground }}
+                  >
+                    {chain.iconUrl && (
+                      <Image alt={chain.name ?? 'Chain icon'} src={chain.iconUrl} width={12} height={12} />
+                    )}
+                  </span>
+                )}
+                {chain.name}
+              </button>
+              <button
+                onClick={openAccountModal}
+                type="button"
+                className={`${btnBase} border border-hairline bg-surface text-fg hover:bg-surface-hover hover:border-hairline-strong`}
+              >
+                {account.displayName}
+              </button>
             </div>
           );
         }}

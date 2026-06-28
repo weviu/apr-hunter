@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
-import { Sora } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
 import { AuthProvider } from '@/lib/auth';
 import { Web3Provider } from '@/components/Web3Provider';
 
-const sora = Sora({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-sora',
+  variable: '--font-inter',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${sora.variable} font-body antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
           <ReactQueryProvider>
             <Web3Provider>

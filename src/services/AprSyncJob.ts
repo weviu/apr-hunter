@@ -25,6 +25,7 @@ import { fetchAaveAprs } from '@/exchanges/aave';
 import { fetchYearnAprs } from '@/exchanges/yearn';
 import { decrypt } from '@/lib/crypto/encryption';
 import { evaluateAlerts } from '@/services/AlertService';
+import { getPrices } from '@/lib/prices/coin-gecko';
 
 export interface SyncResult {
   success: boolean;
@@ -65,6 +66,15 @@ export async function runAprSync(): Promise<SyncResult> {
   } catch (e) {
     // history write is non-fatal
     errors.push(`appendHistory: ${String(e)}`);
+  }
+
+  // Warm the price cache for the assets we just synced so USD values load
+  // instantly from DB on the My Positions page. Non-fatal.
+  try {
+    const assets = [...new Set(snapshots.map((s) => s.asset))];
+    await getPrices(assets);
+  } catch (e) {
+    errors.push(`prices: ${String(e)}`);
   }
 
   // Evaluate alerts in the background — non-fatal

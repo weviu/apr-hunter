@@ -11,6 +11,7 @@ interface PositionDoc {
   userId: ObjectId;
   asset: string;
   exchange: string;
+  product: string | null;
   protocol: string | null;
   chainId: number | null;
   walletAddress: string | null;
@@ -49,6 +50,7 @@ function toPosition(doc: PositionDoc): Position {
     userId: doc.userId.toHexString(),
     asset: doc.asset,
     exchange: doc.exchange,
+    product: doc.product ?? null,
     protocol: doc.protocol,
     chainId: doc.chainId,
     walletAddress: doc.walletAddress,

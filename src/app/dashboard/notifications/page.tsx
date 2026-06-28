@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowLeft, ArrowUp, Bell, Check, CheckCheck, Info, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Bell, Check, CheckCheck, Info, Loader2, Trash2 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/lib/auth';
 import {
@@ -13,6 +13,19 @@ import {
   useDeleteNotification,
   useClearReadNotifications,
 } from '@/hooks/useNotifications';
+import { Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
+
+function notificationIcon(type: string): ReactNode {
+  if (type === 'alert_above') return <ArrowUp className="h-5 w-5 text-success" />;
+  if (type === 'alert_below') return <ArrowDown className="h-5 w-5 text-danger" />;
+  return <Info className="h-5 w-5 text-accent" />;
+}
+
+function iconTileClass(type: string): string {
+  if (type === 'alert_above') return 'bg-success-soft';
+  if (type === 'alert_below') return 'bg-danger-soft';
+  return 'bg-accent-soft';
+}
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -50,18 +63,12 @@ export default function NotificationsPage() {
     });
   };
 
-  const getNotificationIcon = (type: string) => {
-    if (type === 'alert_above') return <ArrowUp className="h-5 w-5 text-green-500" />;
-    if (type === 'alert_below') return <ArrowDown className="h-5 w-5 text-red-500" />;
-    return <Info className="h-5 w-5 text-blue-500" />;
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="min-h-screen bg-canvas">
         <Header />
-        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+        <div className="flex h-[calc(100vh-80px)] items-center justify-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-hairline border-t-accent" />
         </div>
       </div>
     );
@@ -74,54 +81,61 @@ export default function NotificationsPage() {
   const hasRead = notifications.some((n) => n.read);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-canvas">
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/dashboard" className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <Link
+          href="/dashboard"
+          className="mb-6 inline-flex items-center text-sm text-fg-muted transition hover:text-fg"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
+        <FadeRise className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Notifications</h1>
-            <p className="text-gray-400 mt-1">
-              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">Notifications</h1>
+            <p className="mt-1 text-sm text-fg-muted">
+              {unreadCount > 0
+                ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
+                : 'All caught up!'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
-                className="flex items-center gap-2 px-4 py-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-accent transition hover:bg-accent-soft disabled:opacity-50"
               >
                 <CheckCheck className="h-4 w-4" />
-                <span className="text-sm">Mark all read</span>
+                Mark all read
               </button>
             )}
             {hasRead && (
               <button
                 onClick={() => clearRead.mutate()}
                 disabled={clearRead.isPending}
-                className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-fg-muted transition hover:bg-danger-soft hover:text-danger disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
-                <span className="text-sm">Clear read</span>
+                Clear read
               </button>
             )}
           </div>
-        </div>
+        </FadeRise>
 
         {/* Filter tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="mb-6 flex gap-2">
           {(['all', 'unread'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filter === tab ? 'bg-blue-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                filter === tab
+                  ? 'bg-accent-soft text-accent'
+                  : 'text-fg-muted hover:bg-surface-hover hover:text-fg'
               }`}
             >
               {tab === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
@@ -129,79 +143,87 @@ export default function NotificationsPage() {
           ))}
         </div>
 
-        <div className="bg-gray-800 rounded-xl border border-gray-700">
+        <Card className="overflow-hidden">
           {loadingNotifications ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto" />
-              <p className="text-gray-400 mt-4">Loading notifications...</p>
-            </div>
-          ) : filteredNotifications.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bell className="h-8 w-8 text-gray-500" />
-              </div>
-              <h3 className="text-lg font-medium text-white mb-2">
-                {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
-              </h3>
-              <p className="text-gray-400 max-w-sm mx-auto">
-                {filter === 'unread' ? 'You are all caught up!' : 'Notifications will appear here when your alerts trigger.'}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-700">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-6 hover:bg-gray-700/30 transition-colors ${!notification.read ? 'bg-blue-700/5' : ''}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        notification.type === 'alert_above'
-                          ? 'bg-green-500/10'
-                          : notification.type === 'alert_below'
-                          ? 'bg-red-500/10'
-                          : 'bg-blue-500/10'
-                      }`}
-                    >
-                      {getNotificationIcon(notification.type)}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {!notification.read && <span className="w-2 h-2 bg-blue-400 rounded-full" />}
-                        <h3 className="font-semibold text-white">{notification.title}</h3>
-                      </div>
-                      <p className="text-gray-400 mt-1">{notification.message}</p>
-                      <p className="text-xs text-gray-500 mt-2">{formatDate(notification.createdAt)}</p>
-                    </div>
-
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {!notification.read && (
-                        <button
-                          onClick={() => markRead.mutate(notification.id)}
-                          disabled={markRead.isPending}
-                          className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                          title="Mark as read"
-                        >
-                          <Check className="h-5 w-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteNotification.mutate(notification.id)}
-                        disabled={deleteNotification.isPending}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
+            <div className="divide-y divide-hairline">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-start gap-4 p-5">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-64" />
                   </div>
                 </div>
               ))}
             </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-hover">
+                <Bell className="h-6 w-6 text-fg-faint" />
+              </div>
+              <h3 className="text-sm font-medium text-fg">
+                {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+              </h3>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-fg-muted">
+                {filter === 'unread'
+                  ? 'You are all caught up!'
+                  : 'Notifications will appear here when your alerts trigger.'}
+              </p>
+            </div>
+          ) : (
+            <Stagger className="divide-y divide-hairline">
+              {filteredNotifications.map((notification) => (
+                <StaggerItem key={notification.id}>
+                  <div className={`p-5 transition hover:bg-surface-hover ${!notification.read ? 'bg-accent-soft' : ''}`}>
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconTileClass(
+                          notification.type,
+                        )}`}
+                      >
+                        {notificationIcon(notification.type)}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {!notification.read && <span className="h-2 w-2 rounded-full bg-accent" />}
+                          <h3 className="font-medium text-fg">{notification.title}</h3>
+                        </div>
+                        <p className="mt-1 text-sm text-fg-muted">{notification.message}</p>
+                        <p className="mt-2 text-xs text-fg-faint">{formatDate(notification.createdAt)}</p>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-1">
+                        {!notification.read && (
+                          <button
+                            onClick={() => markRead.mutate(notification.id)}
+                            disabled={markRead.isPending}
+                            className="rounded-md p-2 text-fg-faint transition hover:bg-accent-soft hover:text-accent disabled:opacity-50"
+                            title="Mark as read"
+                          >
+                            <Check className="h-5 w-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNotification.mutate(notification.id)}
+                          disabled={deleteNotification.isPending && deleteNotification.variables === notification.id}
+                          className="rounded-md p-2 text-fg-faint transition hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+                          title="Delete"
+                        >
+                          {deleteNotification.isPending && deleteNotification.variables === notification.id ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </StaggerItem>
+              ))}
+            </Stagger>
           )}
-        </div>
+        </Card>
       </main>
     </div>
   );

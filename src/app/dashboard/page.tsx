@@ -1,39 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, Bell, PieChart, Plus, TrendingUp, Wallet, FolderPlus, Zap } from 'lucide-react';
+import { Plus, Wallet, Loader2, X } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/lib/auth';
-import { usePortfolios } from '@/hooks/usePortfolio';
-import { useAlerts } from '@/hooks/useAlerts';
-import { Web3PositionScanner } from '@/components/Web3PositionScanner';
+import { useUserPositions, usePrices, useRemovePosition } from '@/hooks/useMyPositions';
+import { AddPositionModal } from '@/components/AddPositionModal';
+import { Button, Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
+import { formatApr, getFreshness } from '@/lib/utils/apr-utils';
+import type { EnrichedPosition } from '@/types/portfolio';
+
+const usd = (n: number) =>
+  n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-  const [web3ScannerOpen, setWeb3ScannerOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const { data: portfolios = [], isLoading: loadingPortfolios } = usePortfolios({ enabled: !!user });
-  const { data: alertsData } = useAlerts();
-  const alerts = alertsData ?? [];
+  const { data: positions = [], isLoading: loadingPositions } = useUserPositions();
+  const symbols = useMemo(() => positions.map((p) => p.asset), [positions]);
+  const { data: prices = {} } = usePrices(symbols);
+  const removePosition = useRemovePosition();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/');
-    }
+    if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
-  const totalPositions = portfolios.reduce((sum, p) => sum + ((p as { totalPositions?: number }).totalPositions ?? 0), 0);
-  const activeAlerts = alerts.filter((a) => (a as { isActive?: boolean }).isActive).length;
+  const valueOf = (p: EnrichedPosition): number | null => {
+    const price = prices[p.asset.toUpperCase()];
+    return price != null ? p.amount * price : null;
+  };
+
+  const summary = useMemo(() => {
+    let totalValue = 0;
+    let monthly = 0;
+    for (const p of positions) {
+      const price = prices[p.asset.toUpperCase()];
+      if (price == null) continue;
+      const value = p.amount * price;
+      totalValue += value;
+      const apr = p.currentApr ?? p.aprAtEntry;
+      if (apr != null) monthly += (value * apr) / 12;
+    }
+    return { totalValue, monthly };
+  }, [positions, prices]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="min-h-screen bg-canvas">
         <Header />
-        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-700" />
+        <div className="flex h-[calc(100vh-80px)] items-center justify-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-hairline border-t-accent" />
         </div>
       </div>
     );
@@ -42,182 +61,152 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-canvas">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">
-            Welcome back, {user.name ?? user.email.split('@')[0]}!
-          </h1>
-          <p className="text-gray-400 mt-1">Manage your portfolios and track your earnings.</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Positions</p>
-                <p className="text-2xl font-bold text-white mt-1">
-                  {loadingPortfolios ? '...' : totalPositions}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-500/10 rounded-lg">
-                <PieChart className="h-6 w-6 text-blue-500" />
-              </div>
-            </div>
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <FadeRise className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">My Positions</h1>
+            <p className="mt-1 text-sm text-fg-muted">
+              Your staking &amp; earn positions with live rates and value.
+            </p>
           </div>
-
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Active Portfolios</p>
-                <p className="text-2xl font-bold text-white mt-1">
-                  {loadingPortfolios ? '...' : portfolios.length}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-500/10 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-purple-500" />
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              leftIcon={<Wallet size={16} />}
+              disabled
+              title="Wallet auto-detect is coming soon"
+            >
+              Connect Wallet
+            </Button>
+            <Button leftIcon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
+              Add Position
+            </Button>
           </div>
+        </FadeRise>
 
-          <Link href="/dashboard/alerts" className="bg-gray-800 rounded-xl border border-gray-700 p-6 hover:border-gray-600 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Active Alerts</p>
-                <p className="text-2xl font-bold text-white mt-1">{activeAlerts}</p>
+        {/* Summary */}
+        <Stagger className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StaggerItem>
+            <Card className="p-5">
+              <p className="text-sm text-fg-muted">Total Value</p>
+              {loadingPositions ? (
+                <Skeleton className="mt-2 h-7 w-28" />
+              ) : (
+                <p className="mt-1 text-2xl font-semibold text-fg">{usd(summary.totalValue)}</p>
+              )}
+            </Card>
+          </StaggerItem>
+          <StaggerItem>
+            <Card className="p-5">
+              <p className="text-sm text-fg-muted">Est. Monthly Earnings</p>
+              {loadingPositions ? (
+                <Skeleton className="mt-2 h-7 w-24" />
+              ) : (
+                <p className="mt-1 text-2xl font-semibold text-accent">{usd(summary.monthly)}</p>
+              )}
+            </Card>
+          </StaggerItem>
+          <StaggerItem>
+            <Card className="p-5">
+              <p className="text-sm text-fg-muted">Positions</p>
+              {loadingPositions ? (
+                <Skeleton className="mt-2 h-7 w-10" />
+              ) : (
+                <p className="mt-1 text-2xl font-semibold text-fg">{positions.length}</p>
+              )}
+            </Card>
+          </StaggerItem>
+        </Stagger>
+
+        {/* Positions */}
+        {loadingPositions ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-5">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="mt-2 h-4 w-40" />
+                <Skeleton className="mt-4 h-6 w-20" />
+              </Card>
+            ))}
+          </div>
+        ) : positions.length === 0 ? (
+          <FadeRise>
+            <Card className="px-6 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-hover">
+                <Wallet className="h-6 w-6 text-fg-faint" />
               </div>
-              <div className="p-3 bg-yellow-500/10 rounded-lg">
-                <Bell className="h-6 w-6 text-yellow-500" />
+              <h3 className="text-sm font-medium text-fg">No positions yet</h3>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-fg-muted">
+                Add a position to track its live APR and USD value.
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Button leftIcon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
+                  Add Position
+                </Button>
               </div>
-            </div>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            {/* Web3 Scanner Card */}
-            <div className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 rounded-xl border border-blue-700/50 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Zap className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-white">Web3 Position Scanner</h2>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    Scan your wallet to detect and import Web3 positions from Yearn, Aave, and more
-                  </p>
-                </div>
-                <button
-                  onClick={() => setWeb3ScannerOpen(true)}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition whitespace-nowrap"
-                >
-                  <Zap size={18} />
-                  Scan Wallet
-                </button>
-              </div>
-            </div>
-
-            <Web3PositionScanner
-              isOpen={web3ScannerOpen}
-              onClose={() => setWeb3ScannerOpen(false)}
-            />
-
-            {/* Portfolios */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700">
-              <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                <div>
-                  <h2 className="text-xl font-semibold text-white">My Portfolios</h2>
-                  <p className="text-sm text-gray-400 mt-1">Click on a portfolio to manage positions</p>
-                </div>
-                <Link
-                  href="/dashboard/portfolios"
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-lg font-medium transition whitespace-nowrap"
-                >
-                  <FolderPlus size={18} />
-                  New Portfolio
-                </Link>
-              </div>
-
-              <div className="p-6">
-                {loadingPortfolios ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-700 mx-auto" />
-                    <p className="text-gray-400 mt-4">Loading portfolios...</p>
-                  </div>
-                ) : portfolios.length > 0 ? (
-                  <div className="space-y-4">
-                    {portfolios.map((portfolio) => (
-                      <Link
-                        key={portfolio.id}
-                        href={`/dashboard/portfolios/${portfolio.id}`}
-                        className="block bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700/70 transition-colors border border-gray-600 hover:border-gray-500"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-white">{portfolio.name}</h3>
-                            {portfolio.description && (
-                              <p className="text-sm text-gray-400 mt-0.5 truncate max-w-xs">{portfolio.description}</p>
-                            )}
-                          </div>
-                          <ArrowUpRight className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Wallet className="h-8 w-8 text-gray-500" />
-                    </div>
-                    <h3 className="text-lg font-medium text-white mb-2">No portfolios yet</h3>
-                    <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                      Create your first portfolio to start managing your investments.
-                    </p>
-                    <Link
-                      href="/dashboard/portfolios"
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-800 hover:bg-blue-900 text-white rounded-lg transition"
+            </Card>
+          </FadeRise>
+        ) : (
+          <Stagger className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {positions.map((p) => {
+              const value = valueOf(p);
+              const apr = p.currentApr ?? p.aprAtEntry;
+              const fresh = getFreshness(p.aprSyncedAt ?? undefined);
+              const removing = removePosition.isPending && removePosition.variables === p.id;
+              return (
+                <StaggerItem key={p.id}>
+                  <Card className="group relative p-5">
+                    <button
+                      onClick={() => {
+                        if (confirm('Remove this position?')) removePosition.mutate(p.id);
+                      }}
+                      disabled={removing}
+                      className="absolute right-3 top-3 rounded-md p-1.5 text-fg-faint opacity-0 transition hover:bg-danger-soft hover:text-danger group-hover:opacity-100 disabled:opacity-50"
+                      title="Remove position"
+                      aria-label="Remove position"
                     >
-                      <FolderPlus size={20} />
-                      Create Your First Portfolio
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                      {removing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                    </button>
 
-          {/* Quick Links */}
-          <div className="space-y-4">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <Link href="/dashboard/portfolios" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 transition text-gray-300 hover:text-white">
-                  <FolderPlus className="h-5 w-5 text-blue-700" />
-                  Portfolios
-                </Link>
-                <Link href="/dashboard/alerts" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 transition text-gray-300 hover:text-white">
-                  <Bell className="h-5 w-5 text-yellow-500" />
-                  Alerts
-                </Link>
-                <Link href="/dashboard/settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 transition text-gray-300 hover:text-white">
-                  <Plus className="h-5 w-5 text-blue-500" />
-                  API Keys
-                </Link>
-                <Link href="/#opportunities" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 transition text-gray-300 hover:text-white">
-                  <TrendingUp className="h-5 w-5 text-purple-500" />
-                  Top APR Rates
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+                    <div className="flex items-start justify-between gap-4 pr-6">
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-fg">{p.asset}</h3>
+                        <p className="mt-0.5 truncate text-sm capitalize text-fg-muted">
+                          {p.exchange}
+                          {p.product ? ` · ${p.product}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-fg">{value != null ? usd(value) : '—'}</p>
+                        <p className="text-xs text-fg-faint">
+                          {p.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} {p.asset}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-hairline pt-3">
+                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-sm font-medium text-accent">
+                        {apr != null ? `${formatApr(apr)} APR` : 'No live rate'}
+                      </span>
+                      {p.aprSyncedAt && (
+                        <span className="flex items-center gap-1.5 text-xs">
+                          <span className={`h-1.5 w-1.5 rounded-full ${fresh.dotColor}`} />
+                          <span className={fresh.color}>{fresh.label}</span>
+                        </span>
+                      )}
+                    </div>
+                  </Card>
+                </StaggerItem>
+              );
+            })}
+          </Stagger>
+        )}
       </main>
+
+      <AddPositionModal open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }

@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { NotificationBell } from './notification-bell';
 import { WalletConnect } from './WalletConnect';
+import { Button } from '@/components/ui';
+
+const navLinkClass =
+  'rounded-md px-2 py-1 text-fg-muted transition hover:bg-surface-hover hover:text-fg';
 
 export function Header() {
   const router = useRouter();
@@ -17,62 +21,55 @@ export function Header() {
   };
 
   return (
-    <header className="bg-gray-900 border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+    <header className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-3">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-blue-700" />
-            <h1 className="text-2xl font-bold text-white">APR Hunter</h1>
+          <Link href="/" className="flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-accent" />
+            <span className="text-lg font-semibold tracking-tight text-fg">APR Hunter</span>
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/#opportunities" className="text-gray-300 hover:text-blue-400 transition-colors">
+          <nav className="flex items-center gap-1 text-sm font-medium">
+            <Link href="/#opportunities" className={navLinkClass}>
               Opportunities
             </Link>
-            <Link href="/#compare" className="text-gray-300 hover:text-blue-400 transition-colors">
+            <Link href="/#compare" className={navLinkClass}>
               Compare
             </Link>
             {user && (
-              <>
-                <Link href="/dashboard" className="text-gray-300 hover:text-blue-400 transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/dashboard/portfolios" className="text-gray-300 hover:text-blue-400 transition-colors">
-                  Portfolios
-                </Link>
-              </>
+              <Link href="/dashboard" className={navLinkClass}>
+                My Positions
+              </Link>
             )}
-            <div className="hidden sm:flex items-center space-x-3">
+
+            <div className="ml-2 hidden items-center gap-2 sm:flex">
               {user ? (
                 <>
                   <NotificationBell />
                   <Link
                     href="/dashboard/settings"
-                    className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                    className="rounded-md p-2 text-fg-faint transition hover:bg-surface-hover hover:text-fg"
                     title="Settings"
                   >
                     <Settings className="h-5 w-5" />
                   </Link>
-                  <div className="border-l border-gray-700 pl-3">
+                  <div className="border-l border-hairline pl-2">
                     <WalletConnect />
                   </div>
-                  <button
-                    onClick={() => void onSignOut()}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
-                  >
+                  <Button variant="secondary" size="sm" onClick={onSignOut} loadingText="Signing out…">
                     Sign Out
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
+                  <Link href="/login" className={navLinkClass}>
                     Sign In
                   </Link>
                   <Link
                     href="/register"
-                    className="px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-lg transition-colors"
+                    className="inline-flex h-8 items-center rounded-md bg-accent px-3 text-sm font-medium text-accent-fg transition hover:bg-accent-hover"
                   >
                     Sign Up
                   </Link>

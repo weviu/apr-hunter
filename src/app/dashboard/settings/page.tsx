@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { ExchangeKeysSettings } from '@/components/ExchangeKeysSettings';
 import { useAuth } from '@/lib/auth';
 import { useWeb3Chains } from '@/hooks/useWeb3Chains';
+import { Card, FadeRise, Stagger, StaggerItem } from '@/components/ui';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -27,72 +28,82 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
+    <div className="min-h-screen bg-canvas">
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-gray-400">Manage your exchange API keys and preferences</p>
-        </div>
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <FadeRise className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Settings</h1>
+          <p className="mt-1 text-sm text-fg-muted">Manage your exchange API keys and preferences.</p>
+        </FadeRise>
 
-        <div className="space-y-8">
+        <Stagger className="space-y-6">
           {/* Exchange API Keys */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
-            <ExchangeKeysSettings />
-          </section>
+          <StaggerItem>
+            <Card className="p-6">
+              <ExchangeKeysSettings />
+            </Card>
+          </StaggerItem>
 
           {/* Web3 Settings */}
           {mounted && (
-            <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Web3 Settings</h2>
-                <p className="text-gray-400">Configure which blockchain networks to scan for Web3 positions</p>
-              </div>
+            <StaggerItem>
+              <Card className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-fg">Web3 Settings</h2>
+                  <p className="mt-1 text-sm text-fg-muted">
+                    Configure which blockchain networks to scan for Web3 positions.
+                  </p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Chains to Monitor ({selectedChainIds.length} selected)
+                <label className="mb-3 block text-sm font-medium text-fg-muted">
+                  Chains to monitor ({selectedChainIds.length} selected)
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
-                  {availableChains.map((chain) => (
-                    <button
-                      key={chain.id}
-                      onClick={() => toggleChain(chain.id)}
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition border ${
-                        selectedChainIds.includes(chain.id)
-                          ? 'bg-blue-800 border-blue-700 text-white'
-                          : 'bg-slate-700 border-slate-600 text-gray-300 hover:border-slate-500'
-                      }`}
-                    >
-                      {chain.name}
-                    </button>
-                  ))}
+                <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {availableChains.map((chain) => {
+                    const selected = selectedChainIds.includes(chain.id);
+                    return (
+                      <button
+                        key={chain.id}
+                        onClick={() => toggleChain(chain.id)}
+                        className={`rounded-lg border px-4 py-3 text-sm font-medium transition ${
+                          selected
+                            ? 'border-accent bg-accent-soft text-accent'
+                            : 'border-hairline bg-surface text-fg-muted hover:border-hairline-strong hover:text-fg'
+                        }`}
+                      >
+                        {chain.name}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
                   onClick={resetToDefaults}
-                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-300 transition"
+                  className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm text-fg-muted transition hover:bg-surface-hover hover:text-fg"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Reset to Defaults
+                  Reset to defaults
                 </button>
-              </div>
 
-              <div className="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                <p className="text-xs text-gray-400">
-                  <span className="font-medium text-gray-300">Auto-refresh:</span> Web3 positions are automatically refreshed every 5 minutes when you have an active scan.
-                </p>
-              </div>
-            </section>
+                <div className="mt-6 rounded-lg border border-hairline bg-canvas p-4">
+                  <p className="text-xs text-fg-muted">
+                    <span className="font-medium text-fg">Auto-refresh:</span> Web3 positions are
+                    automatically refreshed every 5 minutes when you have an active scan.
+                  </p>
+                </div>
+              </Card>
+            </StaggerItem>
           )}
 
           {/* Notifications placeholder */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Notifications</h2>
-            <p className="text-gray-400">Coming soon...</p>
-          </section>
-        </div>
+          <StaggerItem>
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-fg">Notifications</h2>
+              <p className="mt-1 text-sm text-fg-muted">Coming soon…</p>
+            </Card>
+          </StaggerItem>
+        </Stagger>
       </main>
     </div>
   );

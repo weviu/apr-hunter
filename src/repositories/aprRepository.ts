@@ -165,6 +165,56 @@ export async function getByAsset(asset: string): Promise<AprSnapshot[]> {
   return docs.map(toSnapshot);
 }
 
+/**
+ * All distinct products for an (asset, exchange) pair, each with its latest APR.
+ * Feeds the "Add Position" product dropdown. Asset is matched case-insensitively
+ * (uppercased); exchange is matched exactly as stored (lowercase).
+ */
+export async function getProductsForAssetExchange(
+  asset: string,
+  exchange: string,
+): Promise<Array<{ product: string | null; apr: number; apy: number | null; syncedAt: string }>> {
+  const db = await getMongoDb();
+  if (!db) return [];
+
+  const pipeline = [
+    { $match: { asset: asset.toUpperCase(), exchange } },
+    { $sort: { syncedAt: -1 } },
+    { $group: { _id: '$product', doc: { $first: '$$ROOT' } } },
+    { $replaceRoot: { newRoot: '$doc' } },
+    { $sort: { apr: -1 } },
+  ];
+
+  const docs = await db.collection(SNAPSHOTS).aggregate<SnapshotDoc>(pipeline).toArray();
+  return docs.map((d) => ({
+    product: d.product,
+    apr: d.apr,
+    apy: d.apy,
+    syncedAt: d.syncedAt.toISOString(),
+  }));
+}
+
+/**
+ * The latest APR for a specific (asset, exchange, product) triple — the live
+ * join used when creating a position and when enriching the positions list.
+ * Pass product = null to match snapshots with no product.
+ */
+export async function getLatestAprFor(
+  asset: string,
+  exchange: string,
+  product: string | null,
+): Promise<{ apr: number; apy: number | null; syncedAt: string } | null> {
+  const db = await getMongoDb();
+  if (!db) return null;
+
+  const doc = await db.collection<SnapshotDoc>(SNAPSHOTS).findOne(
+    { asset: asset.toUpperCase(), exchange, product: product ?? null },
+    { sort: { syncedAt: -1 } },
+  );
+  if (!doc) return null;
+  return { apr: doc.apr, apy: doc.apy, syncedAt: doc.syncedAt.toISOString() };
+}
+
 /** Historical APR entries, optionally filtered by exchange/asset/days. */
 export async function getHistory(filters?: {
   exchange?: string;

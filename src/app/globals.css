@@ -2,32 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens — "dark Notion".
+ *
+ * Neutral, warm-leaning dark palette with subtle hairline borders and a single
+ * restrained accent. Components reference the semantic Tailwind colors backed by
+ * these variables (bg-surface, text-fg-muted, border-hairline, …) rather than
+ * hardcoding gray-800 / blue-700. Keeping them as CSS variables makes a future
+ * light theme or toggle a drop-in change.
+ */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
+  color-scheme: dark;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  /*
+   * Colors are stored as space-separated RGB *channels* (not hex) so Tailwind's
+   * opacity modifiers work: e.g. `border-accent/20` → rgb(var(--accent) / 0.2).
+   * The alpha-baked tokens (hairline, fg, *-soft) get their alpha in the Tailwind
+   * config rather than here.
+   */
+
+  /* Surfaces */
+  --canvas: 25 25 25;          /* #191919 — app background */
+  --surface: 32 32 32;         /* #202020 — cards, panels */
+  --surface-hover: 38 38 38;   /* #262626 — hover step (never scale) */
+  --surface-active: 45 45 45;  /* #2d2d2d — pressed / selected */
+
+  /* White, used at low alpha for hairlines and text */
+  --line: 255 255 255;
+  --text: 255 255 255;
+
+  /* Accent (single, restrained). --accent-deep backs the softer panels so they
+     read as a darker, calmer blue rather than a bright wash. */
+  --accent: 35 131 226;        /* #2383e2 */
+  --accent-hover: 58 144 230;  /* #3a90e6 */
+  --accent-deep: 24 86 156;    /* #18569c — deeper blue for soft panels */
+  --accent-fg: 255 255 255;
+
+  /* Status */
+  --success: 48 163 108;       /* #30a46c */
+  --danger: 229 72 77;         /* #e5484d */
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--canvas));
+  color: rgb(var(--text) / 0.9);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.22);
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/*
+ * Respect the user's reduced-motion preference globally. The Framer Motion
+ * primitives also guard with useReducedMotion(); this covers plain CSS
+ * transitions/animations as a baseline. (No bouncy springs anywhere.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

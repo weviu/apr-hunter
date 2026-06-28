@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -17,6 +18,7 @@ const FETCH_INTERVAL_MS = 30_000;
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const reduce = useReducedMotion();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -126,88 +128,96 @@ export function NotificationBell() {
           setIsOpen(nextOpen);
           if (nextOpen) void fetchNotifications();
         }}
-        className="relative p-2 text-gray-400 hover:text-white transition-colors"
+        className="relative rounded-md p-2 text-fg-faint transition hover:bg-surface-hover hover:text-fg"
         title="Notifications"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-medium text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-            <h3 className="font-semibold text-white">Notifications</h3>
-            {unreadCount > 0 && (
-              <button onClick={() => void markAllAsRead()} className="text-xs text-blue-700 hover:text-blue-400">
-                Mark all as read
-              </button>
-            )}
-          </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: reduce ? 1 : 0.97, y: reduce ? 0 : -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: reduce ? 1 : 0.97, y: reduce ? 0 : -4 }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-hairline bg-surface shadow-overlay"
+          >
+            <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
+              <h3 className="font-semibold text-fg">Notifications</h3>
+              {unreadCount > 0 && (
+                <button onClick={() => void markAllAsRead()} className="text-xs text-accent transition hover:text-accent-hover">
+                  Mark all as read
+                </button>
+              )}
+            </div>
 
-          <div className="max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-700 mx-auto" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-8 text-center">
-                <Bell className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No notifications yet</p>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`px-4 py-3 border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors ${
-                    !notification.read ? 'bg-blue-700/5' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {!notification.read && <span className="w-2 h-2 bg-blue-700 rounded-full flex-shrink-0" />}
-                        <p className="text-sm font-medium text-white truncate">{notification.title}</p>
+            <div className="max-h-96 overflow-y-auto">
+              {loading ? (
+                <div className="p-8 text-center">
+                  <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-accent" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Bell className="mx-auto mb-2 h-8 w-8 text-fg-faint" />
+                  <p className="text-sm text-fg-muted">No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`border-b border-hairline px-4 py-3 transition hover:bg-surface-hover ${
+                      !notification.read ? 'bg-accent-soft' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {!notification.read && <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />}
+                          <p className="truncate text-sm font-medium text-fg">{notification.title}</p>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs text-fg-muted">{notification.message}</p>
+                        <p className="mt-1 text-xs text-fg-faint">{formatTime(notification.createdAt)}</p>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1 line-clamp-2">{notification.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{formatTime(notification.createdAt)}</p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {!notification.read && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {!notification.read && (
+                          <button
+                            onClick={() => void markAsRead(notification.id)}
+                            className="rounded-md p-1 text-fg-faint transition hover:bg-accent-soft hover:text-accent"
+                            title="Mark as read"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => void markAsRead(notification.id)}
-                          className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
-                          title="Mark as read"
+                          onClick={() => void deleteNotification(notification.id)}
+                          className="rounded-md p-1 text-fg-faint transition hover:bg-danger-soft hover:text-danger"
+                          title="Delete"
                         >
-                          <Check className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => void deleteNotification(notification.id)}
-                        className="p-1 text-gray-500 hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-700 text-center">
-              <a href="/dashboard/notifications" className="text-sm text-blue-700 hover:text-blue-400">
-                View all notifications
-              </a>
+                ))
+              )}
             </div>
-          )}
-        </div>
-      )}
+
+            {notifications.length > 0 && (
+              <div className="border-t border-hairline px-4 py-3 text-center">
+                <a href="/dashboard/notifications" className="text-sm text-accent transition hover:text-accent-hover">
+                  View all notifications
+                </a>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

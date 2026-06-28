@@ -62,15 +62,19 @@ describe('AuthService — register', () => {
     vi.clearAllMocks();
   });
 
-  it('creates a user when email is not taken', async () => {
+  it('creates a user, opens a session, and returns a token', async () => {
     vi.mocked(userRepo.findUserByEmail).mockResolvedValue(null);
     vi.mocked(userRepo.createUser).mockResolvedValue(userId.toHexString());
+    vi.mocked(sessionRepo.createSession).mockResolvedValue(sessionId.toHexString());
 
     const result = await register('alice@example.com', 'Password1!', 'Alice');
 
-    expect(result.email).toBe('alice@example.com');
-    expect(result.name).toBe('Alice');
+    expect(result.user.email).toBe('alice@example.com');
+    expect(result.user.name).toBe('Alice');
+    expect(typeof result.token).toBe('string');
+    expect(result.token.length).toBeGreaterThan(32);
     expect(userRepo.createUser).toHaveBeenCalledOnce();
+    expect(sessionRepo.createSession).toHaveBeenCalledOnce();
   });
 
   it('throws EMAIL_TAKEN when email already exists', async () => {

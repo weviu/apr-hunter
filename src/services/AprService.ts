@@ -13,6 +13,8 @@ import {
   getHistory,
   getTrends,
   getLatestSyncTimestamp,
+  getProductsForAssetExchange,
+  getLatestAprFor,
 } from '@/repositories/aprRepository';
 import type { AprSnapshot, AprHistoryEntry, AprTrendResult } from '@/types/apr';
 import { sampleAprData } from '@/lib/data/sampleAprRates';
@@ -67,6 +69,16 @@ export async function getAprTrends(limit = 10): Promise<AprTrendResult[]> {
 /** The most recent syncedAt timestamp — used by the health endpoint. */
 export async function getLastSyncTime(): Promise<Date | null> {
   return getLatestSyncTimestamp();
+}
+
+/** Distinct products (with latest APR) for an (asset, exchange) pair — Add Position form. */
+export async function getProductOptions(asset: string, exchange: string) {
+  return getProductsForAssetExchange(asset, exchange);
+}
+
+/** Latest APR for a specific (asset, exchange, product) — live join. */
+export async function getLiveApr(asset: string, exchange: string, product: string | null) {
+  return getLatestAprFor(asset, exchange, product);
 }
 
 // ─── Private helpers ──────────────────────────────────────────────────────────

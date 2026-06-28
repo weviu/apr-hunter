@@ -4,6 +4,7 @@ import { TrendingUp, ExternalLink, Clock, RefreshCw, ArrowUpRight, ArrowDownRigh
 import { AprSnapshot, AprTrendResult } from '@/types/apr';
 import { useTopRates, useAprTrends } from '@/hooks/useApr';
 import { PLATFORM_LINKS, formatApr, getProductLabel, getFreshness } from '@/lib/utils/apr-utils';
+import { Card, Skeleton } from '@/components/ui';
 
 function getTrendBadge(trends: AprTrendResult[], exchange: string, asset: string) {
   const t = trends.find(
@@ -16,7 +17,7 @@ function getTrendBadge(trends: AprTrendResult[], exchange: string, asset: string
 
   if (t.direction === 'up') {
     return (
-      <span className="inline-flex items-center text-blue-400 text-xs gap-1">
+      <span className="inline-flex items-center gap-1 text-xs text-success">
         <ArrowUpRight className="h-3 w-3" />
         {label}
       </span>
@@ -24,14 +25,14 @@ function getTrendBadge(trends: AprTrendResult[], exchange: string, asset: string
   }
   if (t.direction === 'down') {
     return (
-      <span className="inline-flex items-center text-red-400 text-xs gap-1">
+      <span className="inline-flex items-center gap-1 text-xs text-danger">
         <ArrowDownRight className="h-3 w-3" />
         {label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center text-gray-400 text-xs gap-1">
+    <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
       <Minus className="h-3 w-3" />
       {label}
     </span>
@@ -44,35 +45,33 @@ export function TopOpportunities() {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-800/50 backdrop-blur rounded-xl border border-gray-700 p-8">
-        <div className="animate-pulse space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-700 rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <Card className="space-y-3 p-6">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-gray-800/50 backdrop-blur rounded-xl border border-gray-700 p-8">
-        <p className="text-red-400">Failed to load top opportunities. Please try again later.</p>
-      </div>
+      <Card className="p-8">
+        <p className="text-danger">Failed to load top opportunities. Please try again later.</p>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur rounded-xl border border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-sm text-gray-400">
+    <Card className="p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-fg-muted">
           <Clock className="h-4 w-4" />
           <span>Auto-updates every 30s</span>
-          {isFetching && <RefreshCw className="h-4 w-4 animate-spin text-blue-700" />}
+          {isFetching && <RefreshCw className="h-4 w-4 animate-spin text-accent" />}
         </div>
         <button
           onClick={() => void refetch()}
-          className="text-sm text-blue-700 hover:text-blue-400 flex items-center gap-1"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-accent transition hover:bg-accent-soft"
         >
           <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           Refresh
@@ -80,7 +79,7 @@ export function TopOpportunities() {
       </div>
 
       {opportunities.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">No opportunities available at the moment.</div>
+        <div className="py-8 text-center text-fg-muted">No opportunities available at the moment.</div>
       ) : (
         <div className="space-y-3">
           {(opportunities as AprSnapshot[]).map((item, index) => {
@@ -90,56 +89,50 @@ export function TopOpportunities() {
             return (
               <div
                 key={item.id || index}
-                className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-700 rounded-lg hover:border-blue-700/50 transition-all"
+                className="flex items-center justify-between rounded-lg border border-hairline bg-canvas p-4 transition hover:bg-surface-hover hover:border-hairline-strong"
               >
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-700/20 text-blue-400 font-bold text-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
                     {index + 1}
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-white">{item.asset}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-fg">{item.asset}</span>
                       {platformLink ? (
                         <a
                           href={platformLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-blue-700 hover:text-blue-400"
+                          className="flex items-center gap-1 text-sm text-accent transition hover:text-accent-hover"
                         >
                           {item.exchange}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       ) : (
-                        <span className="text-sm text-gray-400">on {item.exchange}</span>
+                        <span className="text-sm text-fg-muted">on {item.exchange}</span>
                       )}
                       {item.product && (
-                        <span className="px-2 py-0.5 text-xs rounded-full text-blue-400 bg-blue-700/20">
+                        <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
                           {getProductLabel(item.product)}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs flex items-center gap-1 ${freshness.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${freshness.dotColor} animate-pulse`} />
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className={`flex items-center gap-1 text-xs ${freshness.color}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${freshness.dotColor} animate-pulse`} />
                         {freshness.label}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1 text-lg font-bold text-blue-400">
-                      <TrendingUp className="h-5 w-5" />
-                      <span>{formatApr(item.apr)}</span>
-                    </div>
-                    {item.apy && (
-                      <div className="text-xs text-gray-500">APY: {formatApr(item.apy)}</div>
-                    )}
-                    <div className="mt-1">
-                      {getTrendBadge(trends as AprTrendResult[], item.exchange, item.asset)}
-                    </div>
+                <div className="text-right">
+                  <div className="flex items-center justify-end gap-1 text-lg font-semibold text-accent">
+                    <TrendingUp className="h-5 w-5" />
+                    <span>{formatApr(item.apr)}</span>
                   </div>
+                  {item.apy && <div className="text-xs text-fg-faint">APY: {formatApr(item.apy)}</div>}
+                  <div className="mt-1">{getTrendBadge(trends as AprTrendResult[], item.exchange, item.asset)}</div>
                 </div>
               </div>
             );
@@ -147,23 +140,23 @@ export function TopOpportunities() {
         </div>
       )}
 
-      <div className="mt-4 pt-4 border-t border-gray-700 text-xs text-gray-500 space-y-2">
+      <div className="mt-4 space-y-2 border-t border-hairline pt-4 text-xs text-fg-faint">
         <p>
           Data sourced from{' '}
-          <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">OKX Earn</a>
+          <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">OKX Earn</a>
           {', '}
-          <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">KuCoin Earn</a>
+          <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">KuCoin Earn</a>
           {', and '}
-          <a href="https://www.binance.com/en/earn" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">Binance Simple Earn</a>
+          <a href="https://www.binance.com/en/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Binance Simple Earn</a>
           . Real staking rates, updated every 30 seconds.
         </p>
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-green-500" /> Live
-          <span className="w-2 h-2 rounded-full bg-yellow-500 ml-2" /> &lt;1h
-          <span className="w-2 h-2 rounded-full bg-orange-500 ml-2" /> &gt;1h
-          <span className="w-2 h-2 rounded-full bg-red-500 ml-2" /> Stale
+        <div className="flex items-center gap-2 text-xs text-fg-muted">
+          <span className="h-2 w-2 rounded-full bg-green-500" /> Live
+          <span className="ml-2 h-2 w-2 rounded-full bg-yellow-500" /> &lt;1h
+          <span className="ml-2 h-2 w-2 rounded-full bg-orange-500" /> &gt;1h
+          <span className="ml-2 h-2 w-2 rounded-full bg-red-500" /> Stale
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

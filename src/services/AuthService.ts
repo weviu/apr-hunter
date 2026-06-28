@@ -50,14 +50,16 @@ export interface LoginResult {
 export type RegisterError = 'EMAIL_TAKEN' | 'DB_ERROR';
 
 /**
- * Create a new user account.
- * Returns the new user on success, or throws with a typed error code.
+ * Create a new user account and immediately establish a session, so signing up
+ * logs the user in (the route sets the returned token as the session cookie).
+ * Returns the new user + raw token on success, or throws with a typed error code.
  */
 export async function register(
   email: string,
   password: string,
   name: string,
-): Promise<AuthUser> {
+  userAgent?: string,
+): Promise<LoginResult> {
   const existing = await findUserByEmail(email);
   if (existing) {
     const e = new Error('Email already in use');
@@ -67,7 +69,19 @@ export async function register(
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   const id = await createUser({ email, passwordHash, name });
-  return { id, email: email.toLowerCase().trim(), name };
+
+  const token = generateToken();
+  await createSession({
+    userId: id,
+    tokenHash: hashToken(token),
+    expiresAt: sessionExpiry(),
+    userAgent,
+  });
+
+  return {
+    user: { id, email: email.toLowerCase().trim(), name },
+    token,
+  };
 }
 
 /**

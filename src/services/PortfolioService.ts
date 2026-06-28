@@ -16,7 +16,8 @@ import {
   savePositionSnapshot,
   getPositionSnapshots,
 } from '@/repositories/positionRepository';
-import type { Portfolio, Position, PositionSnapshot } from '@/types/portfolio';
+import type { Portfolio, Position, PositionSnapshot, EnrichedPosition } from '@/types/portfolio';
+import { getLatestAprFor } from '@/repositories/aprRepository';
 import { ObjectId } from 'mongodb';
 
 // ─── Portfolio operations ──────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export interface CreatePositionInput {
   portfolioId: string;
   asset: string;
   exchange: string;
+  product?: string | null;
   protocol?: string | null;
   chainId?: number | null;
   walletAddress?: string | null;
@@ -92,6 +94,7 @@ export async function addPosition(
     userId: new ObjectId(userId),
     asset: input.asset.toUpperCase(),
     exchange: input.exchange,
+    product: input.product ?? null,
     protocol: input.protocol ?? null,
     chainId: input.chainId ?? null,
     walletAddress: input.walletAddress ?? null,
@@ -118,6 +121,57 @@ export async function getPortfolioPositions(
 
 export async function getUserPositions(userId: string): Promise<Position[]> {
   return findAllPositionsByUserId(userId);
+}
+
+const DEFAULT_PORTFOLIO_NAME = 'My Positions';
+
+/**
+ * Resolve the user's single default portfolio (the hidden container for the
+ * "My Positions" UI), creating it on first use. Uses the oldest active
+ * portfolio for stability if several exist (legacy multi-portfolio users).
+ */
+export async function getOrCreateDefaultPortfolio(userId: string): Promise<string> {
+  const existing = await findPortfoliosByUserId(userId); // active, sorted createdAt desc
+  if (existing.length > 0) return existing[existing.length - 1].id;
+  return createPortfolio(userId, { name: DEFAULT_PORTFOLIO_NAME });
+}
+
+/**
+ * Create a manual position in the user's default portfolio, capturing the
+ * current live APR for the chosen (asset, exchange, product) as aprAtEntry.
+ */
+export async function createManualPosition(
+  userId: string,
+  input: { asset: string; exchange: string; product?: string | null; amount: number },
+): Promise<Position> {
+  const portfolioId = await getOrCreateDefaultPortfolio(userId);
+  const live = await getLatestAprFor(input.asset, input.exchange, input.product ?? null);
+  return addPosition(userId, {
+    portfolioId,
+    asset: input.asset,
+    exchange: input.exchange,
+    product: input.product ?? null,
+    amount: input.amount,
+    aprAtEntry: live?.apr ?? 0,
+  });
+}
+
+/**
+ * All open positions for a user, each joined to its current live APR from
+ * apr_snapshots (fast DB read; the snapshot table is kept warm by the sync job).
+ */
+export async function getEnrichedUserPositions(userId: string): Promise<EnrichedPosition[]> {
+  const positions = (await findAllPositionsByUserId(userId)).filter((p) => p.closedAt === null);
+  return Promise.all(
+    positions.map(async (p) => {
+      const live = await getLatestAprFor(p.asset, p.exchange, p.product);
+      return {
+        ...p,
+        currentApr: live?.apr ?? null,
+        aprSyncedAt: live?.syncedAt ?? null,
+      };
+    }),
+  );
 }
 
 export async function updateUserPosition(

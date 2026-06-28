@@ -1,14 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader, CheckCircle, AlertCircle, Trash2, Plus } from 'lucide-react';
+import { CheckCircle, AlertCircle, Trash2, Loader2 } from 'lucide-react';
 import { useExchangeKeysMetadata, useSaveExchangeKeys, useRemoveExchangeKeys } from '@/hooks/useExchangeKeys';
+import { Button } from '@/components/ui';
 
 const EXCHANGES = [
   { name: 'OKX', requiresPassphrase: true },
   { name: 'KuCoin', requiresPassphrase: true },
   { name: 'Binance', requiresPassphrase: false },
 ];
+
+const fieldClass =
+  'w-full rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-fg ' +
+  'placeholder:text-fg-faint transition focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-50';
 
 export function ExchangeKeysSettings() {
   const { data: keysList = [], isLoading: loadingMetadata, error: metadataError } = useExchangeKeysMetadata();
@@ -68,30 +73,24 @@ export function ExchangeKeysSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Exchange API Keys</h2>
-        <p className="text-gray-400">
-          Securely store your exchange API keys to import your real holdings. Keys are encrypted and never shared.
+        <h2 className="text-lg font-semibold text-fg">Exchange API Keys</h2>
+        <p className="mt-1 text-sm text-fg-muted">
+          Securely store your exchange API keys to import your real holdings. Keys are encrypted and
+          never shared.
         </p>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="text-red-400">{error}</div>
-        </div>
-      )}
-
-      {metadataError && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="text-red-400">Failed to load exchange keys</div>
+      {(error || metadataError) && (
+        <div className="flex gap-3 rounded-md border border-danger/30 bg-danger-soft p-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+          <div className="text-sm text-danger">{error ?? 'Failed to load exchange keys'}</div>
         </div>
       )}
 
       {loadingMetadata ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-6 w-6 text-blue-700 animate-spin mr-2" />
-          <span className="text-gray-400">Loading...</span>
+        <div className="flex items-center justify-center gap-2 py-12 text-fg-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          <span className="text-sm">Loading…</span>
         </div>
       ) : (
         <div className="space-y-3">
@@ -102,98 +101,92 @@ export function ExchangeKeysSettings() {
             const isExpanded = expandedExchange === exchange.name;
             const isSaving = saveKeys.isPending && saveKeys.variables?.exchange === exchange.name.toLowerCase();
             const isRemoving = removeKeys.isPending && removeKeys.variables === exchange.name.toLowerCase();
-            const isLoading = isSaving || isRemoving;
+            const isBusy = isSaving || isRemoving;
 
             return (
-              <div key={exchange.name} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <div key={exchange.name} className="overflow-hidden rounded-lg border border-hairline bg-surface">
                 <button
                   onClick={() => setExpandedExchange(isExpanded ? null : exchange.name)}
-                  disabled={isLoading}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-700/50 transition disabled:opacity-50"
+                  disabled={isBusy}
+                  className="flex w-full items-center justify-between px-5 py-4 transition hover:bg-surface-hover disabled:opacity-50"
                 >
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-white">{exchange.name}</h3>
-                    {isConfigured && <CheckCircle className="h-5 w-5 text-blue-700 flex-shrink-0" />}
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-fg">{exchange.name}</h3>
+                    {isConfigured && <CheckCircle className="h-4 w-4 shrink-0 text-success" />}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400">
-                      {isConfigured ? (
-                        <>
-                          Connected
-                          {lastVerifiedAt && (
-                            <span className="block text-xs">
-                              {new Date(lastVerifiedAt).toLocaleDateString()}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        'Not configured'
-                      )}
-                    </p>
+                  <div className="text-right text-sm text-fg-muted">
+                    {isConfigured ? (
+                      <>
+                        Connected
+                        {lastVerifiedAt && (
+                          <span className="block text-xs text-fg-faint">
+                            {new Date(lastVerifiedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      'Not configured'
+                    )}
                   </div>
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-700 bg-gray-900 p-6 space-y-4">
+                  <div className="space-y-4 border-t border-hairline bg-canvas p-5">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                      <label className="mb-1.5 block text-sm font-medium text-fg-muted">API Key</label>
                       <input
                         type="password"
                         value={formData.apiKey}
                         onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                         placeholder="Enter your API key"
-                        disabled={isLoading}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:opacity-50"
+                        disabled={isBusy}
+                        className={fieldClass}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">API Secret</label>
+                      <label className="mb-1.5 block text-sm font-medium text-fg-muted">API Secret</label>
                       <input
                         type="password"
                         value={formData.apiSecret}
                         onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
                         placeholder="Enter your API secret"
-                        disabled={isLoading}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:opacity-50"
+                        disabled={isBusy}
+                        className={fieldClass}
                       />
                     </div>
 
                     {exchange.requiresPassphrase && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Passphrase</label>
+                        <label className="mb-1.5 block text-sm font-medium text-fg-muted">Passphrase</label>
                         <input
                           type="password"
                           value={formData.passphrase}
                           onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
                           placeholder="Enter your passphrase"
-                          disabled={isLoading}
-                          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:opacity-50"
+                          disabled={isBusy}
+                          className={fieldClass}
                         />
                       </div>
                     )}
 
-                    <div className="flex gap-3 pt-2">
-                      <button
+                    <div className="flex gap-2 pt-1">
+                      <Button
                         onClick={() => void handleSaveKeys(exchange.name)}
-                        disabled={isLoading}
-                        className="flex-1 px-4 py-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white rounded-lg transition font-medium flex items-center justify-center gap-2"
+                        loading={isSaving}
+                        loadingText="Saving…"
                       >
-                        {isSaving ? (
-                          <><Loader className="h-4 w-4 animate-spin" /> Saving...</>
-                        ) : (
-                          <><Plus className="h-4 w-4" /> Save Keys</>
-                        )}
-                      </button>
+                        Save Keys
+                      </Button>
 
                       {isConfigured && (
                         <button
                           onClick={() => handleRemoveKeys(exchange.name)}
-                          disabled={isLoading}
-                          className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 disabled:opacity-50 rounded-lg transition font-medium flex items-center gap-2"
+                          disabled={isBusy}
+                          className="inline-flex h-9 items-center gap-2 rounded-md border border-danger/30 bg-danger-soft px-4 text-sm font-medium text-danger transition hover:bg-danger-soft disabled:opacity-50"
                         >
                           {isRemoving ? (
-                            <><Loader className="h-4 w-4 animate-spin" /> Removing...</>
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Removing…</>
                           ) : (
                             <><Trash2 className="h-4 w-4" /> Remove</>
                           )}
@@ -208,37 +201,37 @@ export function ExchangeKeysSettings() {
         </div>
       )}
 
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-300 mb-3">How to find your API keys</h4>
-        <ul className="text-sm text-blue-200 space-y-3">
+      <div className="rounded-lg border border-accent/20 bg-accent-soft p-4">
+        <h4 className="mb-3 text-sm font-medium text-accent">How to find your API keys</h4>
+        <ul className="space-y-3 text-sm text-fg-muted">
           <li className="space-y-1">
-            <div><strong>OKX:</strong> Account → API Keys → Create API Key (API trading, read only)</div>
-            <a href="https://www.okx.com/account/my-api" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
+            <div><strong className="text-fg">OKX:</strong> Account → API Keys → Create API Key (API trading, read only)</div>
+            <a href="https://www.okx.com/account/my-api" target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline hover:text-accent-hover">
               https://www.okx.com/account/my-api
             </a>
           </li>
           <li className="space-y-1">
-            <div><strong>KuCoin:</strong> Settings → API Management → Create API Key (read only)</div>
-            <a href="https://www.kucoin.com/account/api" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
+            <div><strong className="text-fg">KuCoin:</strong> Settings → API Management → Create API Key (read only)</div>
+            <a href="https://www.kucoin.com/account/api" target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline hover:text-accent-hover">
               https://www.kucoin.com/account/api
             </a>
           </li>
           <li className="space-y-1">
-            <div><strong>Binance:</strong> Account → API Keys → Create API Key (enable Spot &amp; Margin Trading Read Only)</div>
-            <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
+            <div><strong className="text-fg">Binance:</strong> Account → API Keys → Create API Key (enable Spot &amp; Margin Trading Read Only)</div>
+            <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline hover:text-accent-hover">
               https://www.binance.com/en/my/settings/api-management
             </a>
           </li>
         </ul>
       </div>
 
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-        <h4 className="font-semibold text-amber-300 mb-2">Security</h4>
-        <ul className="text-sm text-amber-200 space-y-1">
-          <li>✓ Keys are encrypted before storage</li>
-          <li>✓ Only read-only permissions needed</li>
-          <li>✓ Never sent to exchanges (only used on server)</li>
-          <li>✓ You can remove keys at any time</li>
+      <div className="rounded-lg border border-hairline bg-canvas p-4">
+        <h4 className="mb-2 text-sm font-medium text-fg">Security</h4>
+        <ul className="space-y-1 text-sm text-fg-muted">
+          <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-success" /> Keys are encrypted before storage</li>
+          <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-success" /> Only read-only permissions needed</li>
+          <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-success" /> Never sent to exchanges (only used on server)</li>
+          <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-success" /> You can remove keys at any time</li>
         </ul>
       </div>
     </div>

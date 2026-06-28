@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TrendingUp, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { Button, Card, FadeRise } from '@/components/ui';
+
+const fieldClass =
+  'w-full rounded-md border border-hairline bg-canvas py-2.5 pl-10 pr-3 text-sm text-fg ' +
+  'placeholder:text-fg-faint transition focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,8 +30,8 @@ export default function RegisterPage() {
       setError('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -36,128 +41,121 @@ export default function RegisterPage() {
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <TrendingUp className="h-10 w-10 text-blue-700" />
-            <span className="text-3xl font-bold text-white">APR Hunter</span>
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
+      <FadeRise className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <TrendingUp className="h-8 w-8 text-accent" />
+            <span className="text-2xl font-semibold tracking-tight text-fg">APR Hunter</span>
           </Link>
-          <p className="mt-2 text-gray-400">Create your account to start tracking</p>
+          <p className="mt-2 text-sm text-fg-muted">Create your account to start tracking</p>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-700">
+        <Card className="p-8">
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <div className="flex items-center gap-2 rounded-md border border-danger/30 bg-danger-soft p-3 text-danger">
+                <AlertCircle className="h-5 w-5 shrink-0" />
                 <span className="text-sm">{error}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                Name <span className="text-gray-500">(optional)</span>
+              <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-fg-muted">
+                Name <span className="text-fg-faint">(optional)</span>
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-faint" />
                 <input
                   id="name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent"
-                  placeholder="John Doe"
+                  className={fieldClass}
+                  placeholder="Jane Doe"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-fg-muted">
+                Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-faint" />
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent"
+                  className={fieldClass}
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-fg-muted">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-faint" />
                 <input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent"
+                  className={fieldClass}
                   placeholder="••••••••"
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+              <p className="mt-1 text-xs text-fg-faint">Must be at least 8 characters</p>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                Confirm Password
+              <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-fg-muted">
+                Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-faint" />
                 <input
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent"
+                  className={fieldClass}
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || authLoading}
-              className="w-full py-3 px-4 bg-blue-800 hover:bg-blue-900 disabled:bg-blue-950 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 focus:ring-offset-gray-800"
-            >
-              {isLoading ? 'Creating account...' : 'Create Account'}
-            </button>
+            <Button type="submit" className="w-full" loading={isLoading || authLoading} loadingText="Creating account…">
+              Create Account
+            </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-400">
-              Already have an account?{' '}
-              <Link href="/login" className="text-blue-700 hover:text-blue-400 font-medium">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </div>
+          <p className="mt-6 text-center text-sm text-fg-muted">
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-accent transition hover:text-accent-hover">
+              Sign in
+            </Link>
+          </p>
+        </Card>
 
         <div className="mt-6 text-center">
-          <Link href="/" className="text-gray-400 hover:text-white text-sm">
+          <Link href="/" className="text-sm text-fg-muted transition hover:text-fg">
             ← Back to home
           </Link>
         </div>
-      </div>
+      </FadeRise>
     </div>
   );
 }

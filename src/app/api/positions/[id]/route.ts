@@ -36,3 +36,10 @@ export const PATCH = withAuth(async (request: NextRequest, session, context) => 
   const position = await findPositionById(id);
   return ok(position);
 });
+
+export const DELETE = withAuth(async (_request: NextRequest, session, context) => {
+  const { id } = await (context as Ctx).params;
+  const closed = await closeUserPosition(id, session.user.id);
+  if (!closed) return err('Position not found', 'NOT_FOUND', 404);
+  return ok({ id });
+});
