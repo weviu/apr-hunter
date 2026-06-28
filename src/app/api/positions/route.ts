@@ -21,7 +21,8 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     return err('Invalid JSON body', 'BAD_REQUEST', 400);
   }
 
-  const { asset, exchange, product, amount } = body as Record<string, unknown>;
+  const { asset, exchange, product, amount, apr, protocol, chainId, walletAddress } =
+    body as Record<string, unknown>;
 
   if (typeof asset !== 'string' || !asset.trim()) {
     return err('asset is required', 'VALIDATION_ERROR', 422);
@@ -39,6 +40,10 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     exchange: exchange.trim(),
     product: typeof product === 'string' && product.trim() ? product.trim() : null,
     amount: amountNum,
+    apr: typeof apr === 'number' && Number.isFinite(apr) ? apr : undefined,
+    protocol: typeof protocol === 'string' ? protocol : null,
+    chainId: typeof chainId === 'number' ? chainId : null,
+    walletAddress: typeof walletAddress === 'string' ? walletAddress : null,
   });
 
   return ok(position, 201);

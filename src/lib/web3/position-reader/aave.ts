@@ -15,7 +15,7 @@ export interface AavePosition {
   chain: string;
   amount: number;
   positionType: 'supplied' | 'borrowed';
-  apr: number;
+  apr: number;            // decimal (0.05 = 5%), read on-chain from Aave
   aTokenAddress?: string;
   source: string;
   lastUpdated: string;
@@ -28,7 +28,7 @@ export async function getAaveSuppliedPositions(
   client: PublicClient,
   userAddress: `0x${string}`,
   chainId: number,
-  aprMap?: Map<string, number>
+  _aprMap?: Map<string, number>
 ): Promise<AavePosition[]> {
   const addresses = CONTRACT_ADDRESSES[chainId];
   if (!addresses?.aave?.poolV3) {
@@ -73,9 +73,12 @@ export async function getAaveSuppliedPositions(
         const symbol = await getSymbol(client, reserveAddress);
         const amount = formatBalance(balance, decimals);
 
-        // Get APR from map or use default
-        const aprKey = `aave-${symbol}`;
-        const apr = aprMap?.get(aprKey) || 3.5;
+        // Real on-chain supply APR from Aave (currentLiquidityRate, ray → decimal)
+        const apr = await getSupplyApr(
+          client,
+          addresses.aave.poolDataProvider as `0x${string}`,
+          reserveAddress,
+        );
 
         positions.push({
           symbol: `a${symbol}`,
@@ -99,6 +102,55 @@ export async function getAaveSuppliedPositions(
   } catch (error) {
     console.error('Error reading Aave supplied positions:', error);
     return [];
+  }
+}
+
+const RAY = 1e27;
+
+/**
+ * Read the current supply APR for a reserve from the Aave PoolDataProvider.
+ * `liquidityRate` is the annual supply rate in ray (1e27); APR decimal = rate / 1e27.
+ */
+async function getSupplyApr(
+  client: PublicClient,
+  poolDataProvider: `0x${string}`,
+  reserveAddress: `0x${string}`,
+): Promise<number> {
+  try {
+    const data = (await client.readContract({
+      address: poolDataProvider,
+      abi: [
+        {
+          name: 'getReserveData',
+          type: 'function',
+          stateMutability: 'view',
+          inputs: [{ name: 'asset', type: 'address' }],
+          outputs: [
+            { name: '', type: 'uint256' }, // unbacked
+            { name: '', type: 'uint256' }, // accruedToTreasuryScaled
+            { name: '', type: 'uint256' }, // totalAToken
+            { name: '', type: 'uint256' }, // totalStableDebt
+            { name: '', type: 'uint256' }, // totalVariableDebt
+            { name: '', type: 'uint256' }, // liquidityRate (ray)
+            { name: '', type: 'uint256' }, // variableBorrowRate
+            { name: '', type: 'uint256' }, // stableBorrowRate
+            { name: '', type: 'uint256' }, // averageStableBorrowRate
+            { name: '', type: 'uint256' }, // liquidityIndex
+            { name: '', type: 'uint256' }, // variableBorrowIndex
+            { name: '', type: 'uint40' }, // lastUpdateTimestamp
+          ],
+        },
+      ],
+      functionName: 'getReserveData',
+      args: [reserveAddress],
+    })) as readonly bigint[];
+
+    const liquidityRate = data[5];
+    if (typeof liquidityRate !== 'bigint') return 0;
+    return Number(liquidityRate) / RAY;
+  } catch (error) {
+    console.error('Error reading Aave supply APR:', error);
+    return 0;
   }
 }
 

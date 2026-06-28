@@ -137,22 +137,40 @@ export async function getOrCreateDefaultPortfolio(userId: string): Promise<strin
 }
 
 /**
- * Create a manual position in the user's default portfolio, capturing the
- * current live APR for the chosen (asset, exchange, product) as aprAtEntry.
+ * Create a position in the user's default portfolio.
+ * - Manual entry: `apr` omitted → captures the current live APR from apr_snapshots.
+ * - Imported (e.g. Aave wallet scan): pass `apr` (decimal, already read on-chain)
+ *   plus the DeFi fields and it's stored as-is.
  */
 export async function createManualPosition(
   userId: string,
-  input: { asset: string; exchange: string; product?: string | null; amount: number },
+  input: {
+    asset: string;
+    exchange: string;
+    product?: string | null;
+    amount: number;
+    apr?: number;
+    protocol?: string | null;
+    chainId?: number | null;
+    walletAddress?: string | null;
+  },
 ): Promise<Position> {
   const portfolioId = await getOrCreateDefaultPortfolio(userId);
-  const live = await getLatestAprFor(input.asset, input.exchange, input.product ?? null);
+  let aprAtEntry = input.apr;
+  if (aprAtEntry == null) {
+    const live = await getLatestAprFor(input.asset, input.exchange, input.product ?? null);
+    aprAtEntry = live?.apr ?? 0;
+  }
   return addPosition(userId, {
     portfolioId,
     asset: input.asset,
     exchange: input.exchange,
     product: input.product ?? null,
+    protocol: input.protocol ?? null,
+    chainId: input.chainId ?? null,
+    walletAddress: input.walletAddress ?? null,
     amount: input.amount,
-    aprAtEntry: live?.apr ?? 0,
+    aprAtEntry,
   });
 }
 

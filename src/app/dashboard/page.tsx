@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { useAuth } from '@/lib/auth';
 import { useUserPositions, usePrices, useRemovePosition } from '@/hooks/useMyPositions';
 import { AddPositionModal } from '@/components/AddPositionModal';
+import { Web3Scan } from '@/components/Web3Scan';
 import { Button, Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
 import { formatApr, getFreshness } from '@/lib/utils/apr-utils';
 import type { EnrichedPosition } from '@/types/portfolio';
@@ -73,14 +74,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              leftIcon={<Wallet size={16} />}
-              disabled
-              title="Wallet auto-detect is coming soon"
-            >
-              Connect Wallet
-            </Button>
+            <Web3Scan />
             <Button leftIcon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
               Add Position
             </Button>
@@ -191,12 +185,14 @@ export default function DashboardPage() {
                       <span className="rounded-full bg-accent-soft px-2 py-0.5 text-sm font-medium text-accent">
                         {apr != null ? `${formatApr(apr)} APR` : 'No live rate'}
                       </span>
-                      {p.aprSyncedAt && (
+                      {p.aprSyncedAt ? (
                         <span className="flex items-center gap-1.5 text-xs">
                           <span className={`h-1.5 w-1.5 rounded-full ${fresh.dotColor}`} />
                           <span className={fresh.color}>{fresh.label}</span>
                         </span>
-                      )}
+                      ) : p.protocol ? (
+                        <span className="text-xs text-fg-faint">on-chain · from wallet</span>
+                      ) : null}
                     </div>
                   </Card>
                 </StaggerItem>

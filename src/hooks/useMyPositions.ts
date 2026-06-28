@@ -60,6 +60,16 @@ export function useAprProducts(asset: string, exchange: string) {
   });
 }
 
+export interface DetectedAavePosition {
+  asset: string;
+  amount: number;
+  apr: number;
+  chainId: number;
+  walletAddress: string;
+  exchange: 'aave';
+  product: string;
+}
+
 export function useCreatePosition() {
   const qc = useQueryClient();
   return useMutation({
@@ -68,12 +78,32 @@ export function useCreatePosition() {
       exchange: string;
       product?: string | null;
       amount: number;
+      apr?: number;
+      protocol?: string | null;
+      chainId?: number | null;
+      walletAddress?: string | null;
     }) => {
       const res = await api.post<Env<EnrichedPosition>>('/api/positions', data);
       return (res.data as Env<EnrichedPosition>).data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['positions'] });
+    },
+  });
+}
+
+/** Scan a wallet for Aave V3 supply positions (server-side, Sepolia). */
+export function useScanAave() {
+  return useMutation({
+    mutationFn: async (address: string | undefined) => {
+      const res = await api.post<Env<{ positions: DetectedAavePosition[]; usedDemo: boolean }>>(
+        '/api/web3/scan-aave',
+        { address },
+      );
+      return (res.data as Env<{ positions: DetectedAavePosition[]; usedDemo: boolean }>).data ?? {
+        positions: [],
+        usedDemo: false,
+      };
     },
   });
 }

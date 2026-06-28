@@ -45,11 +45,15 @@ const serverSchema = z.object({
 
   // Prices
   COINGECKO_API_KEY: z.string().optional(),
+
+  // Web3 (server-side reads for wallet auto-detect)
+  RPC_URL_SEPOLIA: z.string().url().optional(),
+  DEMO_WALLET_ADDRESS: z.string().optional(),
 });
 
 const clientSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+  NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: z.string().min(1).optional(),
 });
 
 // ─── Build & export ──────────────────────────────────────────────────────────
@@ -68,7 +72,7 @@ function buildEnv(): Env {
   if (typeof window !== 'undefined') {
     const clientResult = clientSchema.safeParse({
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+      NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
     });
     if (!clientResult.success) {
       throw new Error(
@@ -82,7 +86,7 @@ function buildEnv(): Env {
   const serverResult = serverSchema.safeParse(process.env);
   const clientResult = clientSchema.safeParse({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+    NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
   });
 
   const errors: string[] = [];
