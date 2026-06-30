@@ -1,5 +1,5 @@
 /**
- * Yearn APR adapter — via the DefiLlama Yields API (public, no auth).
+ * Yearn APR adapter  via the DefiLlama Yields API (public, no auth).
  *
  * The old api.yearn.finance host was retired. DefiLlama exposes Yearn's vault
  * APYs under the `yearn-finance` project, so we pull those on Ethereum and keep

@@ -182,31 +182,31 @@ export default function DashboardPage() {
 
                     <div className="flex items-start justify-between gap-4 pr-6">
                       <div className="min-w-0">
-                        <h3 className="font-medium text-fg">{p.asset}</h3>
-                        <p className="mt-0.5 truncate text-sm capitalize text-fg-muted">
+                        <h3 className="text-lg font-semibold text-fg">{p.asset}</h3>
+                        <p className="mt-0.5 truncate text-base capitalize text-fg-muted">
                           {p.exchange}
                           {p.product ? ` · ${p.product}` : ''}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-fg">{value != null ? usd(value) : '—'}</p>
-                        <p className="text-xs text-fg-faint">
+                        <p className="text-xl font-semibold text-fg">{value != null ? usd(value) : ''}</p>
+                        <p className="text-sm text-fg-faint">
                           {p.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} {p.asset}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between border-t border-hairline pt-3">
-                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-sm font-medium text-accent">
+                      <span className="rounded-full bg-accent-soft px-2.5 py-1 text-base font-medium text-accent">
                         {apr != null ? `${formatApr(apr)} APR` : 'No live rate'}
                       </span>
                       {p.aprSyncedAt ? (
-                        <span className="flex items-center gap-1.5 text-xs">
+                        <span className="flex items-center gap-1.5 text-sm">
                           <span className={`h-1.5 w-1.5 rounded-full ${fresh.dotColor}`} />
                           <span className={fresh.color}>{fresh.label}</span>
                         </span>
                       ) : p.protocol ? (
-                        <span className="text-xs text-fg-faint">on-chain · from wallet</span>
+                        <span className="text-sm text-fg-faint">on-chain · from wallet</span>
                       ) : null}
                     </div>
                   </Card>

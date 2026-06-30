@@ -57,7 +57,7 @@ function makeSession(overrides: Partial<import('@/repositories/sessionRepository
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('AuthService — register', () => {
+describe('AuthService  register', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -89,7 +89,7 @@ describe('AuthService — register', () => {
   });
 });
 
-describe('AuthService — login', () => {
+describe('AuthService  login', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -127,7 +127,7 @@ describe('AuthService — login', () => {
   });
 });
 
-describe('AuthService — logout', () => {
+describe('AuthService  logout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -150,7 +150,7 @@ describe('AuthService — logout', () => {
   });
 });
 
-describe('AuthService — me', () => {
+describe('AuthService  me', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -180,7 +180,7 @@ describe('AuthService — me', () => {
   });
 });
 
-describe('AuthService — changePassword', () => {
+describe('AuthService  changePassword', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -210,7 +210,7 @@ describe('AuthService — changePassword', () => {
   });
 });
 
-describe('AuthService — logoutAll', () => {
+describe('AuthService  logoutAll', () => {
   it('calls deleteAllUserSessions', async () => {
     vi.mocked(sessionRepo.deleteAllUserSessions).mockResolvedValue(3);
     await logoutAll(userId.toHexString());

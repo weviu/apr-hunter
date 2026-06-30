@@ -6,7 +6,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
  * MetaMask-only wallet hook built directly on wagmi (no RainbowKit).
  *
  * The single configured connector is the injected MetaMask provider, so
- * connecting talks straight to the browser extension — it launches reliably
+ * connecting talks straight to the browser extension  it launches reliably
  * instead of routing through a WalletConnect/SDK modal.
  */
 export function useMetaMask() {

@@ -14,7 +14,7 @@ vi.mock('@/lib/db/mongodb', () => ({
   closeMongoConnection: () => Promise.resolve(),
 }));
 
-// ─── Mock env — disable live fetch so we can control what gets called ─────────
+// ─── Mock env  disable live fetch so we can control what gets called ─────────
 vi.mock('@/lib/env', () => ({
   env: {
     ENABLE_LIVE_EXCHANGE_FETCH: 'false',
@@ -48,7 +48,7 @@ afterAll(() => disconnectTestDb());
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('AprSyncJob — runAprSync (sample mode)', () => {
+describe('AprSyncJob  runAprSync (sample mode)', () => {
   it('writes sample snapshots to the database when live fetch is disabled', async () => {
     const result = await runAprSync();
 
@@ -82,12 +82,12 @@ describe('AprSyncJob — runAprSync (sample mode)', () => {
     await runAprSync();
     const countAfterSecond = await db.collection('apr_snapshots').countDocuments();
 
-    // saveSnapshots uses insertMany — each sync adds a new timestamped batch
+    // saveSnapshots uses insertMany  each sync adds a new timestamped batch
     expect(countAfterSecond).toBeGreaterThan(countAfterFirst);
   });
 });
 
-describe('AprSyncJob — runAprSync (live mode with mocked fetch)', () => {
+describe('AprSyncJob  runAprSync (live mode with mocked fetch)', () => {
   beforeEach(() => {
     // Override env to enable live fetch for this block
     vi.doMock('@/lib/env', () => ({

@@ -140,8 +140,8 @@ export async function fetchOkxHoldings(
 // ─── APR fetch ───────────────────────────────────────────────────────────────
 
 /**
- * Per-endpoint failures are tolerated, but if EVERY request fails — the
- * signature of an auth/network outage — this throws so the caller can record
+ * Per-endpoint failures are tolerated, but if EVERY request fails  the
+ * signature of an auth/network outage  this throws so the caller can record
  * the failure instead of mistaking it for "no rates".
  */
 export async function fetchOkxAprs(
@@ -234,7 +234,7 @@ export async function fetchOkxAprs(
   }
 
   if (failures.length === attempts) {
-    throw new Error(`OKX: all ${attempts} requests failed — ${failures.join('; ')}`);
+    throw new Error(`OKX: all ${attempts} requests failed  ${failures.join('; ')}`);
   }
 
   return results;

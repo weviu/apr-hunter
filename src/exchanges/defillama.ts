@@ -1,5 +1,5 @@
 /**
- * DefiLlama Yields adapter helper — public, no auth.
+ * DefiLlama Yields adapter helper  public, no auth.
  *
  * One endpoint (https://yields.llama.fi/pools) returns current APYs across
  * hundreds of DeFi protocols. We filter to a single project (e.g. aave-v3,
@@ -12,7 +12,7 @@ import type { SnapshotInsert } from '@/repositories/aprRepository';
 
 const POOLS_URL = 'https://yields.llama.fi/pools';
 
-/** Pools below this TVL are ignored — too thin to treat as a real opportunity. */
+/** Pools below this TVL are ignored  too thin to treat as a real opportunity. */
 const MIN_TVL_USD = 1_000_000;
 /** APY above this is almost certainly a transient/degenerate pool; skip it. */
 const MAX_APY_PCT = 200;

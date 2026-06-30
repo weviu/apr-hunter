@@ -36,7 +36,7 @@ export const POST = withAuth(async (request: NextRequest, session) => {
   let creds: { apiKey: string; apiSecret: string; passphrase?: string };
 
   if (typeof apiKey === 'string' && apiKey.trim()) {
-    // New-entry mode — test the supplied values.
+    // New-entry mode  test the supplied values.
     if (typeof apiSecret !== 'string' || !apiSecret.trim()) {
       return err('apiSecret is required', 'VALIDATION_ERROR', 422);
     }
@@ -46,7 +46,7 @@ export const POST = withAuth(async (request: NextRequest, session) => {
       passphrase: typeof passphrase === 'string' && passphrase ? passphrase : undefined,
     };
   } else {
-    // Saved-card mode — test the stored, encrypted keys.
+    // Saved-card mode  test the stored, encrypted keys.
     const stored = await findExchangeKeyByUserAndExchange(session.user.id, exchange as Exchange);
     if (!stored) {
       return err('No saved keys for this exchange', 'NOT_FOUND', 404);
@@ -65,7 +65,7 @@ export const POST = withAuth(async (request: NextRequest, session) => {
   try {
     await verifyExchangeKey(exchange as Exchange, creds.apiKey, creds.apiSecret, creds.passphrase);
   } catch {
-    return err('Exchange key verification failed — check your credentials', 'KEY_VERIFICATION_FAILED', 400);
+    return err('Exchange key verification failed  check your credentials', 'KEY_VERIFICATION_FAILED', 400);
   }
 
   return ok({ exchange, verified: true });

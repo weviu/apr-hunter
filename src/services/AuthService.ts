@@ -42,7 +42,7 @@ export interface AuthUser {
 
 export interface LoginResult {
   user: AuthUser;
-  token: string; // raw session token — set in httpOnly cookie
+  token: string; // raw session token  set in httpOnly cookie
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ export async function me(rawToken: string): Promise<AuthUser | null> {
   return { id: user._id.toHexString(), email: user.email, name: user.name };
 }
 
-/** Change password — re-hashes and invalidates all existing sessions. */
+/** Change password  re-hashes and invalidates all existing sessions. */
 export async function changePassword(
   userId: string,
   currentPassword: string,

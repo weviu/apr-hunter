@@ -2,7 +2,7 @@
  * Ensures all MongoDB indexes exist for production collections.
  * Called once on app startup (e.g. in Next.js instrumentation.ts).
  *
- * All createIndex calls are idempotent — safe to re-run on every deploy.
+ * All createIndex calls are idempotent  safe to re-run on every deploy.
  */
 import { Db } from 'mongodb';
 import { getMongoDb } from '@/lib/db/mongodb';
@@ -10,7 +10,7 @@ import { getMongoDb } from '@/lib/db/mongodb';
 export async function ensureIndexes(db?: Db): Promise<void> {
   const resolvedDb = db ?? (await getMongoDb());
   if (!resolvedDb) {
-    console.warn('[indexes] Database unavailable — skipping index creation');
+    console.warn('[indexes] Database unavailable  skipping index creation');
     return;
   }
 

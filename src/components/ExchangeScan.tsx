@@ -13,8 +13,8 @@ const usd = (n: number) =>
 const keyOf = (h: ExchangeHolding) => `${h.exchange}-${h.asset}-${h.type}`;
 
 /**
- * Scan connected exchanges (via saved API keys) for the user's real balances —
- * spot + earn — and import them as positions. The spot toggle hides idle
+ * Scan connected exchanges (via saved API keys) for the user's real balances 
+ * spot + earn  and import them as positions. The spot toggle hides idle
  * (non-earning) balances. Lives on the My Positions page header.
  */
 export function ExchangeScan() {
@@ -106,7 +106,7 @@ export function ExchangeScan() {
 
             {visible.length === 0 ? (
               <p className="py-6 text-center text-sm text-fg-muted">
-                Only spot balances found — toggle “Show spot” to see them.
+                Only spot balances found  toggle “Show spot” to see them.
               </p>
             ) : (
               visible.map((h) => {

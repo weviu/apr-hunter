@@ -1,5 +1,5 @@
 /**
- * AprSyncJob — orchestrates one full APR sync cycle.
+ * AprSyncJob  orchestrates one full APR sync cycle.
  *
  * Called by: POST /api/cron/refresh-apr (triggered by PM2 cron script).
  *
@@ -46,7 +46,7 @@ export async function runAprSync(): Promise<SyncResult> {
   if (env.ENABLE_LIVE_EXCHANGE_FETCH === 'true') {
     snapshots = await fetchLiveRates(errors);
     // Drop CEX rows for non-allowlisted assets (meme/micro-cap noise). DeFi
-    // rows pass through — see trackedAssets.ts.
+    // rows pass through  see trackedAssets.ts.
     snapshots = snapshots.filter((s) => shouldTrackSnapshot(s.exchange, s.asset));
   }
 
@@ -59,7 +59,7 @@ export async function runAprSync(): Promise<SyncResult> {
   }
 
   if (snapshots.length === 0) {
-    console.log('[sync] All live fetches failed or disabled — using sample data');
+    console.log('[sync] All live fetches failed or disabled  using sample data');
     snapshots = sampleAprData;
   }
 
@@ -86,7 +86,7 @@ export async function runAprSync(): Promise<SyncResult> {
     errors.push(`prices: ${String(e)}`);
   }
 
-  // Evaluate alerts in the background — non-fatal
+  // Evaluate alerts in the background  non-fatal
   evaluateAlerts().catch((e) => console.error('[sync] Alert evaluation failed:', e));
 
   return {
@@ -113,7 +113,7 @@ async function fetchLiveRates(errors: string[]): Promise<SnapshotInsert[]> {
   return all;
 }
 
-/** Aave, Yearn — DeFi, no auth needed (Kraken's public API was retired) */
+/** Aave, Yearn  DeFi, no auth needed (Kraken's public API was retired) */
 async function fetchPublicExchanges(errors: string[]): Promise<SnapshotInsert[]> {
   const settled = await Promise.allSettled([
     fetchAaveAprs(),
@@ -130,7 +130,7 @@ async function fetchPublicExchanges(errors: string[]): Promise<SnapshotInsert[]>
 }
 
 /**
- * Binance, OKX, KuCoin — need per-user API keys.
+ * Binance, OKX, KuCoin  need per-user API keys.
  *
  * Currently fetches using the first set of credentials stored for each exchange
  * (the platform owner's keys) to get public market rates. User-specific rate
@@ -184,7 +184,7 @@ async function fetchAuthenticatedExchanges(errors: string[]): Promise<SnapshotIn
 
 /**
  * Fetch APRs using a specific user's stored (encrypted) exchange keys.
- * Called from the portfolio scanner — not the cron job.
+ * Called from the portfolio scanner  not the cron job.
  */
 export async function fetchRatesForUser(userId: string): Promise<SnapshotInsert[]> {
   const keys = await findExchangeKeysByUserId(userId);
@@ -207,7 +207,7 @@ export async function fetchRatesForUser(userId: string): Promise<SnapshotInsert[
         case 'kucoin':
           if (passphrase) rows = await fetchKucoinAprs(apiKey, apiSecret, passphrase);
           break;
-        // 'kraken' intentionally unsupported — its public rates API was retired.
+        // 'kraken' intentionally unsupported  its public rates API was retired.
       }
       out.push(...rows);
     } catch (e) {

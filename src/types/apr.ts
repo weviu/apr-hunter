@@ -1,4 +1,4 @@
-// ─── V2 DB schema types (serialised form — dates as ISO strings, _id as string) ─
+// ─── V2 DB schema types (serialised form  dates as ISO strings, _id as string) ─
 
 /**
  * A single APR rate row written by the sync job.
@@ -9,7 +9,7 @@ export interface AprSnapshot {
   exchange: string;            // 'binance' | 'okx' | 'kucoin' | 'kraken' | 'aave' | 'yearn'
   asset: string;               // 'USDT', 'ETH', etc.
   product: string | null;      // e.g. 'Flexible Savings'
-  apr: number;                 // decimal — 0.052 = 5.2%
+  apr: number;                 // decimal  0.052 = 5.2%
   apy: number | null;
   minAmount: number | null;
   currency: string;

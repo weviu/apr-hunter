@@ -5,7 +5,7 @@
  * meme tokens (e.g. 1000CHEEMS) whose high APRs reflect risk/illiquidity, not
  * opportunity. We keep only these recognised assets for CEX rows.
  *
- * DeFi protocol rows (Aave/Yearn) are NOT filtered by this list — they're
+ * DeFi protocol rows (Aave/Yearn) are NOT filtered by this list  they're
  * already a small, curated set, and Yearn reports vault-token symbols that
  * wouldn't match a clean asset allowlist. See shouldTrackSnapshot().
  */

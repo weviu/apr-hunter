@@ -2,7 +2,7 @@
  * Typed, Zod-validated environment variables.
  *
  * This is the single place where `process.env` is read. All other modules
- * import from here — never from `process.env` directly.
+ * import from here  never from `process.env` directly.
  *
  * Server-only variables (everything except NEXT_PUBLIC_*) are only available
  * in server components, API routes, and server actions. Next.js strips them
@@ -19,7 +19,7 @@ import path from 'node:path';
 // ─── Secrets file loader ─────────────────────────────────────────────────────
 
 /**
- * Next.js auto-loads .env / .env.local / .env.production — but NOT .env.secrets.
+ * Next.js auto-loads .env / .env.local / .env.production  but NOT .env.secrets.
  * This project keeps the exchange API keys and ENABLE_LIVE_EXCHANGE_FETCH in
  * .env.secrets, so without this they never reach process.env and the sync
  * silently skips binance/okx/kucoin. Load it once, on the server, before
@@ -73,7 +73,7 @@ const serverSchema = z.object({
   // Feature flags
   ENABLE_LIVE_EXCHANGE_FETCH: z.enum(['true', 'false']).default('false'),
 
-  // Exchange API keys — all optional; absence means sample data is used
+  // Exchange API keys  all optional; absence means sample data is used
   BINANCE_API_KEY: z.string().optional(),
   BINANCE_API_SECRET: z.string().optional(),
   OKX_API_KEY: z.string().optional(),

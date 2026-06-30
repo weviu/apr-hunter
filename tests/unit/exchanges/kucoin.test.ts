@@ -48,7 +48,7 @@ describe('kucoin adapter', () => {
         return mockResponse({
           code: '200000',
           data: [
-            { currency: 'ADA', recentApy: '7.1' }, // 7.1 % — needs /100
+            { currency: 'ADA', recentApy: '7.1' }, // 7.1 %  needs /100
           ],
         });
       }
@@ -67,10 +67,10 @@ describe('kucoin adapter', () => {
       if (u.includes('saving/products')) {
         callCount++;
         if (callCount === 1) {
-          // v3 endpoint — higher rate
+          // v3 endpoint  higher rate
           return mockResponse({ code: '200000', data: [{ currency: 'ETH', recentApy: '0.042' }] });
         }
-        // v1 endpoint — lower rate
+        // v1 endpoint  lower rate
         return mockResponse({ code: '200000', data: [{ currency: 'ETH', recentApy: '0.038' }] });
       }
       return mockResponse({ code: '200000', data: [] });

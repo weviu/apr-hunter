@@ -23,7 +23,7 @@ export function getProductLabel(source?: string): string {
   return 'Earn';
 }
 
-/** DeFi protocols vs centralized exchanges — drives the CEX/DeFi badge. */
+/** DeFi protocols vs centralized exchanges  drives the CEX/DeFi badge. */
 const DEFI_EXCHANGES = new Set(['aave', 'yearn']);
 
 export function getExchangeType(exchange: string): 'CEX' | 'DeFi' {

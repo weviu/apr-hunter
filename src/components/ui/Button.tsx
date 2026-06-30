@@ -43,7 +43,7 @@ export interface ButtonProps
   loading?: boolean;
   loadingText?: string;
   leftIcon?: ReactNode;
-  /** May return a promise — the loading state is held for ≥400ms while it settles. */
+  /** May return a promise  the loading state is held for ≥400ms while it settles. */
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
 }
 

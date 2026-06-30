@@ -1,5 +1,5 @@
 /**
- * UI primitives barrel — the "dark Notion" design system.
+ * UI primitives barrel  the "dark Notion" design system.
  *
  * Import from a single place:
  *   import { Button, Modal, Card, FadeRise, Stagger, StaggerItem, Skeleton } from '@/components/ui';

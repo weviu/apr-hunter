@@ -1,5 +1,5 @@
 /**
- * Next.js instrumentation hook — runs ONCE when the server process boots.
+ * Next.js instrumentation hook  runs ONCE when the server process boots.
  *
  * This is the single-process APR scheduler. It replaces the separate PM2 cron
  * app + trigger-apr-sync.cjs: instead of an external process POSTing to
@@ -7,7 +7,7 @@
  * sync in the background and calls runAprSync() directly.
  *
  * Why this is safe (unlike v1's setInterval in layout.tsx):
- *   - register() is invoked exactly once, at server startup — never per request,
+ *   - register() is invoked exactly once, at server startup  never per request,
  *     never per render, and never during `next build`.
  *   - It is guarded to the Node.js runtime (skipped on the Edge runtime) and to
  *     a single execution via a global flag (dev hot-reload safety).
@@ -36,7 +36,7 @@ export async function register(): Promise<void> {
     try {
       const r = await runAprSync();
       console.log(
-        `[apr-sync] ${r.source} — ${r.snapshotCount} snapshots in ${r.durationMs}ms` +
+        `[apr-sync] ${r.source}  ${r.snapshotCount} snapshots in ${r.durationMs}ms` +
           (r.errors.length ? ` (${r.errors.length} errors)` : ''),
       );
     } catch (e) {

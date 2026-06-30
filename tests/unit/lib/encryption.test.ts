@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 
-// Mock env before importing encryption — env.ts validates at module load time
+// Mock env before importing encryption  env.ts validates at module load time
 vi.mock('@/lib/env', () => ({
   env: {
     // Valid 64-hex-char test key (32 bytes of 0xAB)

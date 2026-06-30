@@ -42,7 +42,7 @@ const config: Config = {
         },
       },
 
-      // ─── Typography — crisp Inter / system ───────────────────────────────────
+      // ─── Typography  crisp Inter / system ───────────────────────────────────
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         body: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -51,7 +51,7 @@ const config: Config = {
 
       // ─── Motion defaults (no springs; standard cubic-beziers only) ────────────
       // Default interactive transition is 200ms ease-in-out (the bare `transition`
-      // utility). Entrances use 300ms ease-out; modals 250ms — see the motion
+      // utility). Entrances use 300ms ease-out; modals 250ms  see the motion
       // primitives. 150ms is reserved for subtle hover background shifts.
       transitionDuration: {
         DEFAULT: '200ms',

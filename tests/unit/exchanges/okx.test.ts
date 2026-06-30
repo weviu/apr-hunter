@@ -48,8 +48,8 @@ describe('okx adapter', () => {
           code: '0',
           data: [
             { ccy: 'SOL', apy: '0.056', term: '0' },   // Flexible staking
-            { ccy: 'SOL', apy: '0.048', term: '0' },   // duplicate — lower, should be skipped
-            { ccy: 'SOL', apy: '0.072', term: '30' },  // 30-Day Staking — distinct
+            { ccy: 'SOL', apy: '0.048', term: '0' },   // duplicate  lower, should be skipped
+            { ccy: 'SOL', apy: '0.072', term: '30' },  // 30-Day Staking  distinct
           ],
         });
       }

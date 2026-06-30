@@ -5,12 +5,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    // Runs before every test file — loads .env and sets SKIP_ENV_VALIDATION
+    // Runs before every test file  loads .env and sets SKIP_ENV_VALIDATION
     setupFiles: ['./tests/helpers/setup.ts'],
     // Unit and integration tests run via `pnpm test`
     // Smoke tests run via `pnpm test:smoke` (requires server running)
     // Exclude all node_modules (including ones vendored into .next during the
-    // Next.js build — e.g. bcrypt ships its own *.test.js files), the .next
+    // Next.js build  e.g. bcrypt ships its own *.test.js files), the .next
     // build output, and smoke tests (which require a running server).
     exclude: ['**/node_modules/**', '.next/**', 'tests/smoke/**'],
     coverage: {
@@ -22,8 +22,8 @@ export default defineConfig({
       exclude: [
         'node_modules/**',
         'tests/**',
-        'src/app/**',           // Next.js pages/routes — covered by smoke tests
-        'src/components/**',    // UI — not covered by unit/integration
+        'src/app/**',           // Next.js pages/routes  covered by smoke tests
+        'src/components/**',    // UI  not covered by unit/integration
         '**/*.config.*',
       ],
     },

@@ -65,7 +65,7 @@ export async function deleteUserAlert(alertId: string, userId: string): Promise<
  *   condition=below  AND  currentApr < threshold
  *
  * A notification is created for each triggered alert.
- * Alerts are not disabled after firing — they remain active and can re-fire on
+ * Alerts are not disabled after firing  they remain active and can re-fire on
  * the next sync if the condition still holds (rate-limited by the 15-min cron).
  */
 export async function evaluateAlerts(): Promise<void> {
@@ -100,7 +100,7 @@ export async function evaluateAlerts(): Promise<void> {
           await createNotification(alert.userId, {
             type: 'alert_triggered',
             title: `${asset} APR alert triggered`,
-            message: `${asset} APR is ${pct}% — ${alert.condition} your threshold of ${tpct}%`,
+            message: `${asset} APR is ${pct}%  ${alert.condition} your threshold of ${tpct}%`,
             relatedAlertId: alert.id,
           });
 

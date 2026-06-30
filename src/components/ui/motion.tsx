@@ -6,7 +6,7 @@
  * Per the design spec:
  *   - Blocks fade in and rise: opacity 0→1, translateY 12px→0, 300ms ease-out.
  *   - Lists stagger their children by 40ms.
- *   - No bouncy springs — standard cubic-bezier ease-out only.
+ *   - No bouncy springs  standard cubic-bezier ease-out only.
  *   - prefers-reduced-motion: drop the translate (and effectively the delay),
  *     keeping a near-instant fade so nothing moves.
  */

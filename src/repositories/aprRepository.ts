@@ -10,7 +10,7 @@ const HISTORY = 'apr_history';
  * silently-failed sync can't keep surfacing weeks-old APRs as if they were live.
  * The sync writes fresh snapshots (live or sample) every cycle, so anything
  * older than this means that (exchange, asset) has had no successful sync since.
- * History/trend reads are intentionally NOT filtered — they're time-series.
+ * History/trend reads are intentionally NOT filtered  they're time-series.
  */
 const MAX_SNAPSHOT_AGE_MS = 24 * 60 * 60 * 1000; // 24h
 
@@ -71,7 +71,7 @@ function toHistoryEntry(doc: HistoryDoc): AprHistoryEntry {
 
 // ─── Write operations ─────────────────────────────────────────────────────────
 
-/** Input type for inserting snapshots — uses Date for syncedAt (converted to ISO by the DB layer). */
+/** Input type for inserting snapshots  uses Date for syncedAt (converted to ISO by the DB layer). */
 export type SnapshotInsert = Omit<AprSnapshot, 'id' | 'syncedAt'> & { syncedAt: Date };
 
 /** Bulk-insert APR snapshots. Ignores partial failures (ordered: false). */
@@ -128,7 +128,7 @@ export async function getLatestAll(filters?: {
 
   const pipeline = [
     { $match: match },
-    // Newest sync first, then highest APR — so $first is the best current
+    // Newest sync first, then highest APR  so $first is the best current
     // product for each (exchange, asset) when an exchange has several.
     { $sort: { syncedAt: -1, apr: -1 } },
     { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
@@ -147,7 +147,7 @@ export async function getTop(limit = 10): Promise<AprSnapshot[]> {
 
   const pipeline = [
     { $match: { syncedAt: { $gte: freshnessCutoff() } } },
-    // Newest sync first, then highest APR — see getLatestAll.
+    // Newest sync first, then highest APR  see getLatestAll.
     { $sort: { syncedAt: -1, apr: -1 } },
     { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
     { $replaceRoot: { newRoot: '$doc' } },
@@ -172,7 +172,7 @@ export async function getByAsset(asset: string): Promise<AprSnapshot[]> {
   if (!db) return [];
 
   const pipeline = [
-    // Real data only — the comparison never shows sample fixtures, and prefer
+    // Real data only  the comparison never shows sample fixtures, and prefer
     // the best (highest-APY) live product per exchange for the asset.
     { $match: { asset: asset.toUpperCase(), source: 'live', syncedAt: { $gte: freshnessCutoff() } } },
     { $sort: { syncedAt: -1, apy: -1 } },
@@ -215,7 +215,7 @@ export async function getProductsForAssetExchange(
 }
 
 /**
- * The latest APR for a specific (asset, exchange, product) triple — the live
+ * The latest APR for a specific (asset, exchange, product) triple  the live
  * join used when creating a position and when enriching the positions list.
  * Pass product = null to match snapshots with no product.
  */

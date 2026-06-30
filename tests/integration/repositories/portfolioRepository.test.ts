@@ -69,7 +69,7 @@ describe('portfolioRepository', () => {
     expect(again).toBe(false);
   });
 
-  it('no hard-delete path exists — data is retained after soft-delete', async () => {
+  it('no hard-delete path exists  data is retained after soft-delete', async () => {
     const id = await createPortfolio(userId, { name: 'Retained' });
     await softDeletePortfolio(id);
     const db = await connectTestDb();

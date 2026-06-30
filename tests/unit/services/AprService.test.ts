@@ -60,7 +60,7 @@ function makeSnapshot(overrides: Partial<AprSnapshot> = {}): AprSnapshot {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('AprService — getAllRates', () => {
+describe('AprService  getAllRates', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns snapshots from the repository', async () => {
@@ -75,7 +75,7 @@ describe('AprService — getAllRates', () => {
 
   it('seeds sample data and retries when DB is empty', async () => {
     vi.mocked(aprRepo.getLatestAll)
-      .mockResolvedValueOnce([]) // first call — empty
+      .mockResolvedValueOnce([]) // first call  empty
       .mockResolvedValueOnce([makeSnapshot({ source: 'sample' })]); // after seed
     vi.mocked(aprRepo.saveSnapshots).mockResolvedValue();
 
@@ -95,7 +95,7 @@ describe('AprService — getAllRates', () => {
   });
 });
 
-describe('AprService — getTopRates', () => {
+describe('AprService  getTopRates', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns top rates from the repository', async () => {
@@ -109,7 +109,7 @@ describe('AprService — getTopRates', () => {
   });
 });
 
-describe('AprService — getRatesByAsset', () => {
+describe('AprService  getRatesByAsset', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('delegates to getByAsset', async () => {
@@ -123,7 +123,7 @@ describe('AprService — getRatesByAsset', () => {
   });
 });
 
-describe('AprService — getAssetList', () => {
+describe('AprService  getAssetList', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('delegates to getUniqueAssets', async () => {
@@ -135,7 +135,7 @@ describe('AprService — getAssetList', () => {
   });
 });
 
-describe('AprService — getAprTrends', () => {
+describe('AprService  getAprTrends', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('delegates to getTrends with limit', async () => {
@@ -149,7 +149,7 @@ describe('AprService — getAprTrends', () => {
   });
 });
 
-describe('AprService — getLastSyncTime', () => {
+describe('AprService  getLastSyncTime', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns null when no sync has happened', async () => {

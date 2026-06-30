@@ -5,7 +5,7 @@ import { env } from '@/lib/env';
 const SESSION_COOKIE_NAME = 'session';
 
 /**
- * 7 days in seconds — matches rolling session expiry in session.ts
+ * 7 days in seconds  matches rolling session expiry in session.ts
  */
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
@@ -15,7 +15,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
  * Tying this to NODE_ENV (production) breaks plain-http deployments: browsers
  * silently drop a `Secure` cookie over http://<non-localhost>, so login/signup
  * never persist and the dashboard bounces back to logged-out. Deriving it from
- * the configured scheme means http deploys work and https deploys stay Secure —
+ * the configured scheme means http deploys work and https deploys stay Secure 
  * set NEXT_PUBLIC_APP_URL=https://… in production behind TLS.
  */
 const COOKIE_SECURE = (env.NEXT_PUBLIC_APP_URL ?? '').startsWith('https://');

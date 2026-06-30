@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui';
 
 interface FieldRule {
-  /** Loose length bounds — advisory, catches obvious paste mistakes. */
+  /** Loose length bounds  advisory, catches obvious paste mistakes. */
   min: number;
   max: number;
   /** Optional shape check. Kept conservative to avoid rejecting valid keys. */
@@ -27,7 +27,7 @@ interface ExchangeConfig {
   apiSecret: FieldRule;
 }
 
-// Format rules are intentionally loose — the authoritative check is the
+// Format rules are intentionally loose  the authoritative check is the
 // server-side "Test connection" / Save verification against the live API.
 const EXCHANGES: ExchangeConfig[] = [
   {
@@ -39,13 +39,13 @@ const EXCHANGES: ExchangeConfig[] = [
       pattern: /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
       hint: 'OKX API keys look like a UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).',
     },
-    apiSecret: { min: 16, max: 128, hint: 'OKX secret looks too short — copy the full Secret Key.' },
+    apiSecret: { min: 16, max: 128, hint: 'OKX secret looks too short  copy the full Secret Key.' },
   },
   {
     name: 'KuCoin',
     requiresPassphrase: true,
     apiKey: { min: 16, max: 64, hint: 'KuCoin API keys are a long alphanumeric string.' },
-    apiSecret: { min: 16, max: 128, hint: 'KuCoin secret looks too short — copy the full Secret Key.' },
+    apiSecret: { min: 16, max: 128, hint: 'KuCoin secret looks too short  copy the full Secret Key.' },
   },
   {
     name: 'Binance',
@@ -58,7 +58,7 @@ const EXCHANGES: ExchangeConfig[] = [
 /** Loose client-side format check. Returns an error message or null. */
 function validateFormat(config: ExchangeConfig, data: { apiKey: string; apiSecret: string; passphrase: string }): string | null {
   const checkField = (label: string, value: string, rule: FieldRule): string | null => {
-    if (/\s/.test(value)) return `${label} should not contain spaces — check for an extra character when pasting.`;
+    if (/\s/.test(value)) return `${label} should not contain spaces  check for an extra character when pasting.`;
     if (value.length < rule.min || value.length > rule.max) return rule.hint;
     if (rule.pattern && !rule.pattern.test(value)) return rule.hint;
     return null;
@@ -73,7 +73,7 @@ function validateFormat(config: ExchangeConfig, data: { apiKey: string; apiSecre
   );
 }
 
-/** Read-only masked field shown for a saved card — dots match the stored key length. */
+/** Read-only masked field shown for a saved card  dots match the stored key length. */
 function MaskedField({ label, length, hint }: { label: string; length: number; hint?: string }) {
   return (
     <div>
@@ -273,7 +273,7 @@ export function ExchangeKeysSettings() {
                           <MaskedField
                             label="API Passphrase"
                             length={entry?.passphraseLength ?? 0}
-                            hint="The passphrase you set when creating the API key — not your account login or trading password."
+                            hint="The passphrase you set when creating the API key  not your account login or trading password."
                           />
                         )}
                         <p className="text-xs text-fg-faint">
@@ -328,7 +328,7 @@ export function ExchangeKeysSettings() {
                               className={fieldClass}
                             />
                             <p className="mt-1.5 text-xs text-fg-faint">
-                              The passphrase you set when creating the API key — not your account login or trading password.
+                              The passphrase you set when creating the API key  not your account login or trading password.
                             </p>
                           </div>
                         )}

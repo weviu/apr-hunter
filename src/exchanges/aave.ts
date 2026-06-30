@@ -1,5 +1,5 @@
 /**
- * Aave v3 APR adapter — via the DefiLlama Yields API (public, no auth).
+ * Aave v3 APR adapter  via the DefiLlama Yields API (public, no auth).
  *
  * The old aave-api-v2.aave.com host was retired. DefiLlama aggregates current
  * APYs across DeFi protocols, so we pull the `aave-v3` pools on Ethereum and

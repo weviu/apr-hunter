@@ -5,7 +5,7 @@ module.exports = {
     // ─── Next.js app (single process) ───────────────────────────────────────────
     // The APR sync runs inside this process via src/instrumentation.ts, which
     // schedules runAprSync() every 15 minutes at server startup. No separate
-    // cron process is needed — see that file for the rationale.
+    // cron process is needed  see that file for the rationale.
     {
       name: 'apr-hunter',
       cwd: __dirname,

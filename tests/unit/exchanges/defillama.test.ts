@@ -21,7 +21,7 @@ describe('defillama adapter', () => {
         status: 'success',
         data: [
           { project: 'aave-v3', chain: 'Ethereum', symbol: 'USDC', apy: 5.0, tvlUsd: 50_000_000 },
-          { project: 'aave-v3', chain: 'Ethereum', symbol: 'USDC', apy: 7.0, tvlUsd: 20_000_000 }, // higher — wins
+          { project: 'aave-v3', chain: 'Ethereum', symbol: 'USDC', apy: 7.0, tvlUsd: 20_000_000 }, // higher  wins
           { project: 'aave-v3', chain: 'Ethereum', symbol: 'DAI', apy: 4.0, tvlUsd: 10_000_000 },
           { project: 'aave-v3', chain: 'Polygon', symbol: 'USDC', apy: 99, tvlUsd: 99_000_000 }, // wrong chain
           { project: 'yearn-finance', chain: 'Ethereum', symbol: 'USDC', apy: 99, tvlUsd: 99_000_000 }, // wrong project

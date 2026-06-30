@@ -49,7 +49,7 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
 
-  // Keep the latest onClose/dismissible without making them effect deps —
+  // Keep the latest onClose/dismissible without making them effect deps 
   // callers often pass an inline onClose, and re-running the focus/scroll-lock
   // effect on every parent render bounces focus and makes the modal flicker.
   const onCloseRef = useRef(onClose);

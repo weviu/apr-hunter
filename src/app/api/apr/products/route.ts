@@ -5,7 +5,7 @@ import { getProductOptions } from '@/services/AprService';
 /**
  * GET /api/apr/products?asset=USDC&exchange=binance
  * Returns the distinct earn products for that asset+platform, each with its
- * latest APR — used to populate the product dropdown in the Add Position form.
+ * latest APR  used to populate the product dropdown in the Add Position form.
  */
 export async function GET(request: NextRequest) {
   const asset = request.nextUrl.searchParams.get('asset')?.trim();

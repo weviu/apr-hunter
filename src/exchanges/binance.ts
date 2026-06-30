@@ -2,7 +2,7 @@
  * Binance Simple Earn adapter.
  *
  * Fetches flexible and locked earn rates from the Binance API.
- * Falls back to an empty array on auth failure — the caller (AprSyncJob)
+ * Falls back to an empty array on auth failure  the caller (AprSyncJob)
  * decides whether to substitute sample data.
  *
  * APR values are returned as DECIMALS (0.05 = 5%).
@@ -46,10 +46,10 @@ async function authenticatedRequest<T>(
  * Verify Binance credentials with a single read-only account call.
  * Throws if the credentials are rejected; resolves if they authenticate.
  *
- * Uses GET /api/v3/account — the standard signed account-info endpoint, which
+ * Uses GET /api/v3/account  the standard signed account-info endpoint, which
  * only needs the always-on "Enable Reading" permission that every key (incl.
  * Simple-Earn-only keys) has. Unlike fetchBinanceAprs, this does NOT swallow
- * errors — it is used to prove the keys actually work.
+ * errors  it is used to prove the keys actually work.
  */
 export async function verifyBinanceKey(apiKey: string, secretKey: string): Promise<void> {
   await authenticatedRequest('/api/v3/account', {}, apiKey, secretKey);
@@ -112,7 +112,7 @@ export async function fetchBinanceHoldings(
  * Fetch current APR rates from Binance Simple Earn (flexible + locked).
  *
  * Per-endpoint failures are tolerated (a partial result is still useful), but
- * if EVERY request fails — the signature of an auth/network outage — this throws
+ * if EVERY request fails  the signature of an auth/network outage  this throws
  * so the caller can record the failure instead of mistaking it for "no rates".
  */
 export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promise<SnapshotInsert[]> {
@@ -213,7 +213,7 @@ export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promi
   }
 
   if (failures.length === attempts) {
-    throw new Error(`Binance: all ${attempts} requests failed — ${failures.join('; ')}`);
+    throw new Error(`Binance: all ${attempts} requests failed  ${failures.join('; ')}`);
   }
 
   return results;

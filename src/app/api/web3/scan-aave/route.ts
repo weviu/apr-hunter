@@ -22,7 +22,7 @@ export interface DetectedAavePosition {
 /**
  * RPC URL for each chain the scan supports. A chain is only scannable if both
  * an RPC and Aave V3 addresses (see addresses.ts) exist for it.
- * TODO: extend to a full parallel multi-chain scan — see memory note.
+ * TODO: extend to a full parallel multi-chain scan  see memory note.
  */
 function rpcForChain(chainId: number): string | undefined {
   switch (chainId) {

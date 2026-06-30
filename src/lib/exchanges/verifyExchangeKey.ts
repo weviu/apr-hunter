@@ -41,7 +41,7 @@ export async function verifyExchangeKey(
       await verifyKucoinKey(apiKey, apiSecret, passphrase);
       break;
     case 'kraken':
-      // Kraken is read via public endpoints only — nothing to verify.
+      // Kraken is read via public endpoints only  nothing to verify.
       break;
   }
 }

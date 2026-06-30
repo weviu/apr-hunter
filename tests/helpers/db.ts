@@ -1,5 +1,5 @@
 /**
- * Test DB helpers — wraps the same Docker MongoDB instance but uses a
+ * Test DB helpers  wraps the same Docker MongoDB instance but uses a
  * dedicated 'apr-hunter-test' database so test runs never touch dev data.
  *
  * Usage in integration tests:
@@ -24,7 +24,7 @@ export async function connectTestDb(): Promise<Db> {
   if (db) return db;
 
   const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error('[test] MONGODB_URI is not set — cannot connect to test database');
+  if (!uri) throw new Error('[test] MONGODB_URI is not set  cannot connect to test database');
 
   client = new MongoClient(uri);
   await client.connect();

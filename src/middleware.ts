@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ---------------------------------------------------------------------------
 // In-process sliding-window rate limiter
 // Keyed by "<IP>::<bucket>".  Resets after `windowMs` milliseconds.
-// Single-process PM2 fork mode — no shared storage needed.
+// Single-process PM2 fork mode  no shared storage needed.
 // ---------------------------------------------------------------------------
 
 interface RateWindow {
@@ -44,11 +44,11 @@ function maybeCleanup(): void {
 // Rate-limit buckets
 // ---------------------------------------------------------------------------
 const BUCKETS = {
-  // Auth endpoints — strict to prevent brute force
+  // Auth endpoints  strict to prevent brute force
   auth: { limit: 10, windowMs: 60_000 },
-  // Cron endpoint — only the PM2 script calls it; still guard against accidents
+  // Cron endpoint  only the PM2 script calls it; still guard against accidents
   cron: { limit: 5, windowMs: 60_000 },
-  // APR read routes — public, high-traffic; generous limit
+  // APR read routes  public, high-traffic; generous limit
   apr: { limit: 120, windowMs: 60_000 },
   // Authenticated write routes (portfolios, positions, alerts, notifications)
   api: { limit: 60, windowMs: 60_000 },
@@ -61,7 +61,7 @@ function getBucket(pathname: string): Bucket | null {
   if (pathname.startsWith('/api/cron/')) return 'cron';
   if (pathname.startsWith('/api/apr')) return 'apr';
   if (pathname.startsWith('/api/')) return 'api';
-  return null; // static files, pages — no rate limit
+  return null; // static files, pages  no rate limit
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ export function middleware(request: NextRequest): NextResponse {
 
   // Prefer X-Forwarded-For set by a trusted reverse proxy; fall back to the
   // direct connection address.  We never trust client-supplied headers blindly
-  // in a public deployment — strip to just the first hop.
+  // in a public deployment  strip to just the first hop.
   const forwarded = request.headers.get('x-forwarded-for');
   const ip = (forwarded ? forwarded.split(',')[0] : null) ?? '127.0.0.1';
   const key = `${ip}::${bucket}`;

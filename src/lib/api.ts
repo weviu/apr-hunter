@@ -1,5 +1,5 @@
 /**
- * V2 API client — no token injection. Auth cookies are sent automatically
+ * V2 API client  no token injection. Auth cookies are sent automatically
  * by the browser on every same-origin request.
  */
 

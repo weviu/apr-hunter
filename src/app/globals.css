@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * Design tokens — "dark Notion".
+ * Design tokens  "dark Notion".
  *
  * Neutral, warm-leaning dark palette with subtle hairline borders and a single
  * restrained accent. Components reference the semantic Tailwind colors backed by
@@ -22,10 +22,10 @@
    */
 
   /* Surfaces */
-  --canvas: 25 25 25;          /* #191919 — app background */
-  --surface: 32 32 32;         /* #202020 — cards, panels */
-  --surface-hover: 38 38 38;   /* #262626 — hover step (never scale) */
-  --surface-active: 45 45 45;  /* #2d2d2d — pressed / selected */
+  --canvas: 25 25 25;          /* #191919  app background */
+  --surface: 32 32 32;         /* #202020  cards, panels */
+  --surface-hover: 38 38 38;   /* #262626  hover step (never scale) */
+  --surface-active: 45 45 45;  /* #2d2d2d  pressed / selected */
 
   /* White, used at low alpha for hairlines and text */
   --line: 255 255 255;
@@ -35,7 +35,7 @@
      read as a darker, calmer blue rather than a bright wash. */
   --accent: 35 131 226;        /* #2383e2 */
   --accent-hover: 58 144 230;  /* #3a90e6 */
-  --accent-deep: 24 86 156;    /* #18569c — deeper blue for soft panels */
+  --accent-deep: 24 86 156;    /* #18569c  deeper blue for soft panels */
   --accent-fg: 255 255 255;
 
   /* Status */

@@ -151,13 +151,13 @@ export function AddPositionModal({ open, onClose }: AddPositionModalProps) {
             <option value="">{exchange ? 'Select a product' : 'Pick a platform first'}</option>
             {products.map((p) => (
               <option key={p.product ?? ''} value={p.product ?? ''}>
-                {p.product ?? 'Earn'} — {formatApr(p.apr)}
+                {p.product ?? 'Earn'}  {formatApr(p.apr)}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Live rate readout — the trust-building part */}
+        {/* Live rate readout  the trust-building part */}
         {selected && (
           <div className="rounded-md border border-hairline bg-canvas px-3 py-2.5">
             <div className="flex items-baseline justify-between">

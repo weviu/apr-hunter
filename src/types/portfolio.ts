@@ -17,12 +17,12 @@ export interface Position {
   userId: string;
   asset: string;               // e.g. 'USDT'
   exchange: string;            // e.g. 'binance'
-  product: string | null;      // APR product key, e.g. 'Flexible Savings' — join key into apr_snapshots
+  product: string | null;      // APR product key, e.g. 'Flexible Savings'  join key into apr_snapshots
   protocol: string | null;     // e.g. 'aave' for DeFi
   chainId: number | null;
   walletAddress: string | null;
   amount: number;
-  aprAtEntry: number;          // decimal — live rate captured at entry (fallback for display)
+  aprAtEntry: number;          // decimal  live rate captured at entry (fallback for display)
   stakedAt: string;            // ISO 8601
   closedAt: string | null;
   notes: string | null;

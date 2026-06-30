@@ -1,8 +1,8 @@
 /**
- * AprService — read-only façade over the APR data in MongoDB.
+ * AprService  read-only façade over the APR data in MongoDB.
  *
  * This service only reads from `apr_snapshots` and `apr_history`.
- * It never calls exchange adapters directly — that is AprSyncJob's job.
+ * It never calls exchange adapters directly  that is AprSyncJob's job.
  * Routes that need APR data call this service; they never touch repositories directly.
  */
 import {
@@ -31,7 +31,7 @@ export interface AprFilters {
 export async function getAllRates(filters?: AprFilters): Promise<AprSnapshot[]> {
   const rows = await getLatestAll(filters);
   if (rows.length > 0) return rows;
-  // DB is empty — seed with sample data so the UI is never blank
+  // DB is empty  seed with sample data so the UI is never blank
   await seedSampleData();
   return getLatestAll(filters);
 }
@@ -66,17 +66,17 @@ export async function getAprTrends(limit = 10): Promise<AprTrendResult[]> {
   return getTrends(limit);
 }
 
-/** The most recent syncedAt timestamp — used by the health endpoint. */
+/** The most recent syncedAt timestamp  used by the health endpoint. */
 export async function getLastSyncTime(): Promise<Date | null> {
   return getLatestSyncTimestamp();
 }
 
-/** Distinct products (with latest APR) for an (asset, exchange) pair — Add Position form. */
+/** Distinct products (with latest APR) for an (asset, exchange) pair  Add Position form. */
 export async function getProductOptions(asset: string, exchange: string) {
   return getProductsForAssetExchange(asset, exchange);
 }
 
-/** Latest APR for a specific (asset, exchange, product) — live join. */
+/** Latest APR for a specific (asset, exchange, product)  live join. */
 export async function getLiveApr(asset: string, exchange: string, product: string | null) {
   return getLatestAprFor(asset, exchange, product);
 }

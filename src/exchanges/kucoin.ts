@@ -106,7 +106,7 @@ export async function verifyKucoinKey(
 
 /**
  * Read the user's KuCoin balances: spot (across account types) and Earn holdings.
- * Best-effort — each source is independent, so a failure in one still returns the
+ * Best-effort  each source is independent, so a failure in one still returns the
  * other. Never throws.
  */
 export async function fetchKucoinHoldings(
@@ -116,7 +116,7 @@ export async function fetchKucoinHoldings(
 ): Promise<ExchangeHolding[]> {
   const out: ExchangeHolding[] = [];
 
-  // Spot / funding balances — /accounts returns one row per (currency, accountType).
+  // Spot / funding balances  /accounts returns one row per (currency, accountType).
   try {
     const res = await authenticatedRequest<{
       code: string;
@@ -181,7 +181,7 @@ const ENDPOINTS = [
 
 /**
  * Per-endpoint failures are tolerated (KuCoin's v1/v3 paths are inconsistent),
- * but if EVERY request fails — the signature of an auth/network outage — this
+ * but if EVERY request fails  the signature of an auth/network outage  this
  * throws so the caller can record the failure instead of mistaking it for
  * "no rates".
  */

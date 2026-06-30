@@ -62,7 +62,7 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     await verifyExchangeKey(exchange as Exchange, apiKey, apiSecret, passphrase as string | undefined);
     verifiedAt = new Date();
   } catch {
-    return err('Exchange key verification failed — check your credentials', 'KEY_VERIFICATION_FAILED', 400);
+    return err('Exchange key verification failed  check your credentials', 'KEY_VERIFICATION_FAILED', 400);
   }
 
   await upsertExchangeKey(session.user.id, exchange as Exchange, {

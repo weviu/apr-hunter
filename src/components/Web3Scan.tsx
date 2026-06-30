@@ -89,7 +89,7 @@ export function Web3Scan() {
           <div className="space-y-3">
             {usedDemo && (
               <p className="rounded-md border border-hairline bg-canvas px-3 py-2 text-xs text-fg-muted">
-                Showing a demo wallet — your connected wallet has no Aave positions.
+                Showing a demo wallet  your connected wallet has no Aave positions.
               </p>
             )}
             {results.map((p) => {

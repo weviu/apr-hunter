@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { env } from '@/lib/env';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 12;   // 96-bit IV — recommended for GCM
+const IV_LENGTH = 12;   // 96-bit IV  recommended for GCM
 const TAG_LENGTH = 16;  // 128-bit auth tag
 
 function getKey(): Buffer {
@@ -43,7 +43,7 @@ export function decrypt(ciphertext: string): string {
   const parts = ciphertext.split(':');
 
   if (parts.length !== 3) {
-    throw new Error('Invalid ciphertext format — expected iv:authTag:data');
+    throw new Error('Invalid ciphertext format  expected iv:authTag:data');
   }
 
   const [ivHex, authTagHex, encryptedHex] = parts;

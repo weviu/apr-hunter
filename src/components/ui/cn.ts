@@ -1,5 +1,5 @@
 /**
- * Minimal className joiner — filters out falsy values and joins with spaces.
+ * Minimal className joiner  filters out falsy values and joins with spaces.
  * Keeps the primitives dependency-free. Caller-supplied `className` is always
  * appended last so it can override earlier utilities.
  */

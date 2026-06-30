@@ -96,7 +96,7 @@ describe('aprRepository', () => {
       aprSnapshotFixture({ exchange: 'kucoin', asset: 'USDT', apr: 0.09, source: 'sample' }),
     ]);
     const results = await getByAsset('USDT');
-    // The sample kucoin row must be excluded — comparison shows real data only.
+    // The sample kucoin row must be excluded  comparison shows real data only.
     expect(results).toHaveLength(1);
     expect(results[0].asset).toBe('USDT');
     expect(results[0].exchange).toBe('binance');

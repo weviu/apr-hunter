@@ -38,7 +38,7 @@ export async function GET() {
       syncAgeSeconds = Math.floor((Date.now() - latestSnapshot.syncedAt.getTime()) / 1000);
     }
   } catch {
-    // Non-fatal — health check still reports DB as connected
+    // Non-fatal  health check still reports DB as connected
   }
 
   return NextResponse.json({

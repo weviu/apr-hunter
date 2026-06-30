@@ -4,7 +4,7 @@
  * Card surface primitive.
  *
  * A neutral surface with a hairline border. When `interactive`, hover shifts the
- * background up one step and strengthens the border — restrained, never a scale
+ * background up one step and strengthens the border  restrained, never a scale
  * or lift (per spec). Padding is intentionally not baked in so callers control
  * density; pass it via className.
  */
