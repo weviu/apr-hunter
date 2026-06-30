@@ -9,6 +9,7 @@
  */
 import crypto from 'node:crypto';
 import type { SnapshotInsert } from '@/repositories/aprRepository';
+import type { ExchangeHolding } from '@/types/holdings';
 
 // ─── Signing ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,57 @@ async function authenticatedRequest<T>(
  */
 export async function verifyBinanceKey(apiKey: string, secretKey: string): Promise<void> {
   await authenticatedRequest('/api/v3/account', {}, apiKey, secretKey);
+}
+
+// ─── Holdings (the user's own balances) ────────────────────────────────────────
+
+/**
+ * Read the user's Binance balances: spot account + flexible Simple Earn positions.
+ * Best-effort; never throws.
+ */
+export async function fetchBinanceHoldings(
+  apiKey: string,
+  secretKey: string,
+): Promise<ExchangeHolding[]> {
+  const out: ExchangeHolding[] = [];
+
+  // Spot balances.
+  try {
+    const res = await authenticatedRequest<{
+      balances?: Array<{ asset: string; free: string; locked: string }>;
+    }>('/api/v3/account', {}, apiKey, secretKey);
+
+    if (Array.isArray(res?.balances)) {
+      for (const b of res.balances) {
+        const asset = String(b.asset || '').toUpperCase();
+        const amt = parseFloat(b.free || '0') + parseFloat(b.locked || '0');
+        if (!asset || !(amt > 0)) continue;
+        out.push({ asset, amount: amt, type: 'spot' });
+      }
+    }
+  } catch (e) {
+    console.warn('[binance] spot balances failed:', e);
+  }
+
+  // Flexible Simple Earn positions.
+  try {
+    const res = await authenticatedRequest<{
+      rows?: Array<{ asset: string; totalAmount: string }>;
+    }>('/sapi/v1/simple-earn/flexible/position', { size: '100' }, apiKey, secretKey);
+
+    if (Array.isArray(res?.rows)) {
+      for (const r of res.rows) {
+        const asset = String(r.asset || '').toUpperCase();
+        const amt = parseFloat(r.totalAmount || '0');
+        if (!asset || !(amt > 0)) continue;
+        out.push({ asset, amount: amt, type: 'earn', product: 'Flexible Savings' });
+      }
+    }
+  } catch (e) {
+    console.warn('[binance] flexible earn positions failed:', e);
+  }
+
+  return out;
 }
 
 // ─── APR fetch ───────────────────────────────────────────────────────────────

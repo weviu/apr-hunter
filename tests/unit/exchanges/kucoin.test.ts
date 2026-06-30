@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchKucoinAprs, verifyKucoinKey } from '@/exchanges/kucoin';
+import { fetchKucoinAprs, verifyKucoinKey, fetchKucoinHoldings } from '@/exchanges/kucoin';
 
 const API_KEY    = 'test-key';
 const SECRET     = 'test-secret';
@@ -135,5 +135,55 @@ describe('verifyKucoinKey', () => {
       mockResponse({ code: '400003', msg: 'KC-API-KEY not exists' }),
     );
     await expect(verifyKucoinKey(API_KEY, SECRET, PASSPHRASE)).rejects.toThrow(/not exists/);
+  });
+});
+
+describe('fetchKucoinHoldings', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sums spot balances per asset and includes earn holdings', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const u = url.toString();
+      if (u.includes('/api/v1/accounts')) {
+        return mockResponse({
+          code: '200000',
+          data: [
+            { currency: 'USDT', type: 'trade', balance: '100' },
+            { currency: 'USDT', type: 'main', balance: '50' }, // summed → 150
+            { currency: 'BTC', type: 'trade', balance: '0.01' },
+            { currency: 'ETH', type: 'trade', balance: '0' }, // zero → skipped
+          ],
+        });
+      }
+      if (u.includes('hold-assets')) {
+        return mockResponse({
+          code: '200000',
+          data: { items: [{ currency: 'USDT', holdAmount: '200', productCategory: 'SAVINGS' }] },
+        });
+      }
+      return mockResponse({ code: '200000', data: [] });
+    });
+
+    const h = await fetchKucoinHoldings(API_KEY, SECRET, PASSPHRASE);
+    expect(h.find((x) => x.asset === 'USDT' && x.type === 'spot')?.amount).toBe(150);
+    expect(h.find((x) => x.asset === 'BTC' && x.type === 'spot')?.amount).toBe(0.01);
+    expect(h.find((x) => x.asset === 'ETH')).toBeUndefined();
+    expect(h.find((x) => x.type === 'earn')).toMatchObject({ asset: 'USDT', amount: 200 });
+  });
+
+  it('is best-effort: returns spot even if the earn endpoint fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const u = url.toString();
+      if (u.includes('/api/v1/accounts')) {
+        return mockResponse({ code: '200000', data: [{ currency: 'USDT', type: 'trade', balance: '10' }] });
+      }
+      return new Response('Unauthorized', { status: 401 }); // hold-assets fails
+    });
+
+    const h = await fetchKucoinHoldings(API_KEY, SECRET, PASSPHRASE);
+    expect(h).toHaveLength(1);
+    expect(h[0]).toMatchObject({ asset: 'USDT', amount: 10, type: 'spot' });
   });
 });

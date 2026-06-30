@@ -1,12 +1,14 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
-interface ExchangeHolding {
+export interface ExchangeHolding {
   asset: string;
   exchange: string;
-  amount: number | null;
+  amount: number;
+  type: 'spot' | 'earn';
+  product: string | null;
   aprCurrent: number | null;
 }
 
@@ -30,20 +32,14 @@ export function useConnectedExchanges() {
 }
 
 /**
- * Fetch holdings from connected exchanges, optionally filtered by exchange name.
+ * Scan the user's connected exchanges for real holdings (spot + earn), on demand.
+ * Triggered by the "Scan Exchanges" button.
  */
-export function useExchangeHoldings(exchange?: string, options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ['exchange-holdings', exchange],
-    queryFn: async () => {
-      const url = exchange
-        ? `/api/exchanges/holdings?exchange=${encodeURIComponent(exchange)}`
-        : '/api/exchanges/holdings';
-      const res = await api.get<ApiResponse<ExchangeHolding[]>>(url);
+export function useScanExchanges() {
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.get<ApiResponse<ExchangeHolding[]>>('/api/exchanges/holdings');
       return (res.data as ApiResponse<ExchangeHolding[]>).data ?? [];
     },
-    enabled: options?.enabled !== false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   });
 }

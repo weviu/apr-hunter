@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useUserPositions, usePrices, useRemovePosition } from '@/hooks/useMyPositions';
 import { AddPositionModal } from '@/components/AddPositionModal';
 import { Web3Scan } from '@/components/Web3Scan';
+import { ExchangeScan } from '@/components/ExchangeScan';
 import { Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
 import { formatApr, getFreshness } from '@/lib/utils/apr-utils';
 import type { EnrichedPosition } from '@/types/portfolio';
@@ -74,6 +75,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ExchangeScan />
             <Web3Scan />
             <button
               type="button"

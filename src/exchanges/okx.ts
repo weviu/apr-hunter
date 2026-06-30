@@ -8,6 +8,7 @@
  */
 import crypto from 'node:crypto';
 import type { SnapshotInsert } from '@/repositories/aprRepository';
+import type { ExchangeHolding } from '@/types/holdings';
 
 type HttpMethod = 'GET' | 'POST';
 
@@ -78,6 +79,62 @@ export async function verifyOkxKey(
   if (res?.code !== '0') {
     throw new Error(`OKX key verification failed: ${res?.msg || res?.code || 'unknown error'}`);
   }
+}
+
+// ─── Holdings (the user's own balances) ────────────────────────────────────────
+
+/**
+ * Read the user's OKX balances: trading account (spot) + flexible savings.
+ * Best-effort; never throws.
+ */
+export async function fetchOkxHoldings(
+  apiKey: string,
+  secretKey: string,
+  passphrase: string,
+): Promise<ExchangeHolding[]> {
+  const out: ExchangeHolding[] = [];
+
+  // Trading account balances (spot).
+  try {
+    const res = await authenticatedRequest<{
+      code: string;
+      data?: Array<{ details?: Array<{ ccy: string; cashBal: string; eq: string }> }>;
+    }>('/api/v5/account/balance', apiKey, secretKey, passphrase);
+
+    if (res?.code === '0' && Array.isArray(res.data)) {
+      for (const acc of res.data) {
+        for (const d of acc.details ?? []) {
+          const asset = String(d.ccy || '').toUpperCase();
+          const amt = parseFloat(d.cashBal || d.eq || '0');
+          if (!asset || !(amt > 0)) continue;
+          out.push({ asset, amount: amt, type: 'spot' });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[okx] account balance failed:', e);
+  }
+
+  // Flexible savings holdings.
+  try {
+    const res = await authenticatedRequest<{
+      code: string;
+      data?: Array<{ ccy: string; amt: string }>;
+    }>('/api/v5/finance/savings/balance', apiKey, secretKey, passphrase);
+
+    if (res?.code === '0' && Array.isArray(res.data)) {
+      for (const d of res.data) {
+        const asset = String(d.ccy || '').toUpperCase();
+        const amt = parseFloat(d.amt || '0');
+        if (!asset || !(amt > 0)) continue;
+        out.push({ asset, amount: amt, type: 'earn', product: 'Flexible Savings' });
+      }
+    }
+  } catch (e) {
+    console.warn('[okx] savings balance failed:', e);
+  }
+
+  return out;
 }
 
 // ─── APR fetch ───────────────────────────────────────────────────────────────

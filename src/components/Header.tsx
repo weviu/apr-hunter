@@ -13,7 +13,7 @@ const navLinkClass =
 
 export function Header() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   const onSignOut = async () => {
     await logout();
@@ -38,14 +38,18 @@ export function Header() {
             <Link href="/#compare" className={navLinkClass}>
               Compare
             </Link>
-            {user && (
+            {!isLoading && user && (
               <Link href="/dashboard" className={navLinkClass}>
                 My Positions
               </Link>
             )}
 
             <div className="ml-2 hidden items-center gap-2 sm:flex">
-              {user ? (
+              {isLoading ? (
+                // Avoid flashing the logged-out (Sign In/Sign Up) state before
+                // the session check resolves on reload.
+                <div className="h-8" aria-hidden />
+              ) : user ? (
                 <>
                   <NotificationBell />
                   <Link

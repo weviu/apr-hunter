@@ -10,6 +10,7 @@
  */
 import crypto from 'node:crypto';
 import type { SnapshotInsert } from '@/repositories/aprRepository';
+import type { ExchangeHolding } from '@/types/holdings';
 
 type HttpMethod = 'GET' | 'POST';
 
@@ -99,6 +100,68 @@ export async function verifyKucoinKey(
   if (res?.code !== '200000') {
     throw new Error(`KuCoin key verification failed: ${res?.msg || res?.code || 'unknown error'}`);
   }
+}
+
+// ─── Holdings (the user's own balances) ────────────────────────────────────────
+
+/**
+ * Read the user's KuCoin balances: spot (across account types) and Earn holdings.
+ * Best-effort — each source is independent, so a failure in one still returns the
+ * other. Never throws.
+ */
+export async function fetchKucoinHoldings(
+  apiKey: string,
+  secretKey: string,
+  passphrase: string,
+): Promise<ExchangeHolding[]> {
+  const out: ExchangeHolding[] = [];
+
+  // Spot / funding balances — /accounts returns one row per (currency, accountType).
+  try {
+    const res = await authenticatedRequest<{
+      code: string;
+      data?: Array<{ currency: string; balance: string }>;
+    }>('/api/v1/accounts', apiKey, secretKey, passphrase);
+
+    if (res?.code === '200000' && Array.isArray(res.data)) {
+      const byAsset = new Map<string, number>();
+      for (const a of res.data) {
+        const asset = String(a.currency || '').toUpperCase();
+        const amt = parseFloat(a.balance || '0');
+        if (!asset || !(amt > 0)) continue;
+        byAsset.set(asset, (byAsset.get(asset) ?? 0) + amt);
+      }
+      for (const [asset, amount] of byAsset) out.push({ asset, amount, type: 'spot' });
+    }
+  } catch (e) {
+    console.warn('[kucoin] spot balances failed:', e);
+  }
+
+  // Earn holdings.
+  try {
+    const res = await authenticatedRequest<{
+      code: string;
+      data?: { items?: Array<{ currency: string; holdAmount: string; productCategory?: string }> };
+    }>('/api/v1/earn/hold-assets?currentPage=1&pageSize=100', apiKey, secretKey, passphrase);
+
+    if (res?.code === '200000' && Array.isArray(res.data?.items)) {
+      for (const it of res.data.items) {
+        const asset = String(it.currency || '').toUpperCase();
+        const amt = parseFloat(it.holdAmount || '0');
+        if (!asset || !(amt > 0)) continue;
+        out.push({
+          asset,
+          amount: amt,
+          type: 'earn',
+          product: it.productCategory ? `${it.productCategory} Earn` : 'Earn',
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[kucoin] earn holdings failed:', e);
+  }
+
+  return out;
 }
 
 // ─── APR fetch ───────────────────────────────────────────────────────────────
