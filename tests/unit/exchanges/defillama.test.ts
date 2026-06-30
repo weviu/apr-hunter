@@ -56,6 +56,23 @@ describe('defillama adapter', () => {
     expect(rows.map((r) => r.asset)).toEqual(['GOOD']);
   });
 
+  it('splits apr (base) from apy (total) and aliases WETH→ETH', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse({
+        status: 'success',
+        data: [
+          { project: 'aave-v3', chain: 'Ethereum', symbol: 'WETH', apy: 9.0, apyBase: 4.0, tvlUsd: 20_000_000 },
+        ],
+      }),
+    );
+
+    const rows = await fetchDefiLlamaBestByAsset(OPTS);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].asset).toBe('ETH'); // WETH aliased to ETH
+    expect(rows[0].apr).toBeCloseTo(0.04, 5); // base
+    expect(rows[0].apy).toBeCloseTo(0.09, 5); // total
+  });
+
   it('throws on a non-2xx response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nope', { status: 503 }));
     await expect(fetchDefiLlamaBestByAsset(OPTS)).rejects.toThrow(/DefiLlama API 503/);

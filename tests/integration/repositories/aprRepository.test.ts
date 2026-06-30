@@ -89,14 +89,17 @@ describe('aprRepository', () => {
     expect(top1[0].apr).toBe(0.08);
   });
 
-  it('getByAsset returns latest per exchange for the asset', async () => {
+  it('getByAsset returns latest per exchange for the asset (live only)', async () => {
     await saveSnapshots([
-      aprSnapshotFixture({ exchange: 'binance', asset: 'USDT', apr: 0.05 }),
-      aprSnapshotFixture({ exchange: 'okx', asset: 'ETH', apr: 0.02 }),
+      aprSnapshotFixture({ exchange: 'binance', asset: 'USDT', apr: 0.05, source: 'live' }),
+      aprSnapshotFixture({ exchange: 'okx', asset: 'ETH', apr: 0.02, source: 'live' }),
+      aprSnapshotFixture({ exchange: 'kucoin', asset: 'USDT', apr: 0.09, source: 'sample' }),
     ]);
     const results = await getByAsset('USDT');
+    // The sample kucoin row must be excluded — comparison shows real data only.
     expect(results).toHaveLength(1);
     expect(results[0].asset).toBe('USDT');
+    expect(results[0].exchange).toBe('binance');
   });
 
   it('getLatestSyncTimestamp returns null on empty collection', async () => {

@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { TrendingUp, TrendingDown, ExternalLink, Clock, RefreshCw, Info } from 'lucide-react';
 import { AprSnapshot } from '@/types/apr';
 import { useAprByAsset, useAprAssets } from '@/hooks/useApr';
-import { PLATFORM_LINKS, formatApr, getProductLabel, getFreshness } from '@/lib/utils/apr-utils';
+import { PLATFORM_LINKS, formatApr, getProductLabel, getExchangeType, getFreshness } from '@/lib/utils/apr-utils';
 import { Card, Skeleton } from '@/components/ui';
 
 const DEFAULT_ASSETS = [
@@ -29,7 +29,25 @@ export function AprComparison() {
   const [selectedAsset, setSelectedAsset] = useState<string>('BTC');
   const [assetSearch, setAssetSearch] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the asset dropdown on any click/tap outside it. This replaces an
+  // onBlur+setTimeout close that raced with the 30s background refetch and made
+  // the menu flicker.
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+    };
+  }, [isSearchOpen]);
 
   const { data: assetList = [] } = useAprAssets();
 
@@ -75,30 +93,27 @@ export function AprComparison() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-fg-muted">Select Asset</label>
-          <div className="relative space-y-2">
+          <div className="flex items-center gap-3">
+            <div ref={searchRef} className="relative w-full sm:w-72">
             <input
               type="text"
               value={assetSearch}
-              onChange={(e) => setAssetSearch(e.target.value)}
-              onFocus={() => {
-                if (blurTimeout.current) clearTimeout(blurTimeout.current);
+              onChange={(e) => {
+                setAssetSearch(e.target.value);
                 setIsSearchOpen(true);
               }}
-              onBlur={() => {
-                blurTimeout.current = setTimeout(() => setIsSearchOpen(false), 120);
-              }}
-              placeholder={`Search assets… (current: ${selectedAsset})`}
+              onFocus={() => setIsSearchOpen(true)}
+              placeholder="Search assets…"
               className="w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40"
             />
             {isSearchOpen && (
-              <div className="absolute z-10 max-h-48 w-full divide-y divide-hairline overflow-y-auto rounded-md border border-hairline bg-surface shadow-overlay">
+              <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full divide-y divide-hairline overflow-y-auto rounded-md border border-hairline bg-surface shadow-overlay">
                 {filteredAssets.length === 0 ? (
                   <div className="px-4 py-3 text-sm text-fg-faint">No assets found</div>
                 ) : (
                   filteredAssets.map((opt) => (
                     <button
                       key={opt.value}
-                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setSelectedAsset(opt.value);
                         setAssetSearch('');
@@ -114,6 +129,14 @@ export function AprComparison() {
                 )}
               </div>
             )}
+            </div>
+            <div
+              className="flex shrink-0 items-center gap-2 rounded-md border border-hairline bg-surface px-3 py-2"
+              title="Currently selected asset"
+            >
+              <span className="text-xs text-fg-faint">Showing</span>
+              <span className="text-sm font-semibold text-accent">{selectedAsset}</span>
+            </div>
           </div>
         </div>
 
@@ -157,6 +180,7 @@ export function AprComparison() {
               {aprData.map((item, index) => {
                 const freshness = getFreshness(item.syncedAt, item.source);
                 const platformLink = PLATFORM_LINKS[item.exchange];
+                const exchangeType = getExchangeType(item.exchange);
                 const isTop = sortedData[0]?.id === item.id;
                 const isBottom = sortedData[sortedData.length - 1]?.id === item.id && sortedData.length > 1;
 
@@ -178,9 +202,20 @@ export function AprComparison() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4">
-                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
-                        {getProductLabel(item.product ?? undefined)}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
+                          {getProductLabel(item.product ?? undefined)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            exchangeType === 'DeFi'
+                              ? 'bg-success-soft text-success'
+                              : 'border border-hairline text-fg-muted'
+                          }`}
+                        >
+                          {exchangeType}
+                        </span>
+                      </div>
                     </td>
                     <td className="whitespace-nowrap px-4 py-4">
                       <div className="flex items-center gap-1">
@@ -213,9 +248,15 @@ export function AprComparison() {
           <a href="https://www.okx.com/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">OKX Earn</a>
           {', '}
           <a href="https://www.kucoin.com/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">KuCoin Earn</a>
-          {', and '}
+          {', '}
           <a href="https://www.binance.com/en/earn" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Binance Simple Earn</a>
-          . Real staking rates, updated every 30 seconds.
+          {', plus DeFi yields from '}
+          <a href="https://app.aave.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Aave</a>
+          {' and '}
+          <a href="https://yearn.fi" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Yearn</a>
+          {' (via '}
+          <a href="https://defillama.com/yields" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">DefiLlama</a>
+          ). Real rates, updated every 30 seconds.
         </p>
         <p className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-green-500" /> Live

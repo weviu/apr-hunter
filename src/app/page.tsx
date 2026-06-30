@@ -130,7 +130,7 @@ export default function Home() {
             <h2 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Compare APR Rates</h2>
             <p className="mt-1 text-fg-muted">Select an asset to see all available staking options</p>
             <p className="mt-1 text-xs uppercase tracking-wide text-fg-faint">
-              Data from OKX Earn, KuCoin Earn, and Binance Simple Earn. Updated every 30 seconds.
+              Data from OKX, KuCoin, and Binance earn; Aave and Yearn DeFi yields. Updated every 30 seconds.
             </p>
           </FadeRise>
           <AprComparison />
@@ -186,7 +186,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-hairline py-8">
         <div className="mx-auto max-w-7xl px-4 text-center text-sm text-fg-faint sm:px-6 lg:px-8">
-          <p>APR Hunter — informational only, not financial advice.</p>
+          <p>APR Hunter</p>
         </div>
       </footer>
     </div>

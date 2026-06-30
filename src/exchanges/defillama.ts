@@ -21,9 +21,19 @@ interface LlamaPool {
   project: string;
   chain: string;
   symbol: string;
-  apy: number | null;
+  apy: number | null;      // total APY (base + rewards)
+  apyBase: number | null;  // base supply APY, without incentive rewards
   tvlUsd: number | null;
 }
+
+/**
+ * Map wrapped/derivative tickers to the canonical asset so DeFi rows line up
+ * with the CEX rows (e.g. Aave lists WETH; exchanges list ETH).
+ */
+const SYMBOL_ALIASES: Record<string, string> = {
+  WETH: 'ETH',
+  WBTC: 'BTC',
+};
 
 interface LlamaResponse {
   status: string;
@@ -53,24 +63,28 @@ export async function fetchDefiLlamaBestByAsset(opts: {
   for (const pool of body.data) {
     if (pool.project !== opts.project || pool.chain !== chain) continue;
 
-    const asset = (pool.symbol ?? '').toUpperCase();
+    const raw = (pool.symbol ?? '').toUpperCase();
+    // Skip LP/multi-token pools (symbols like "USDC-DAI") before aliasing.
+    if (!raw || raw.includes('-')) continue;
+    const asset = SYMBOL_ALIASES[raw] ?? raw;
+
     const apyPct = pool.apy ?? 0;
-    // Skip LP/multi-token pools (symbols like "USDC-DAI"), zero/degenerate
-    // rates, and thin pools.
-    if (!asset || asset.includes('-')) continue;
+    // DefiLlama returns whole-percent. apr = base supply rate; apy = total
+    // (base + incentive rewards). For pools with no rewards they're equal.
     if (apyPct <= 0 || apyPct > MAX_APY_PCT) continue;
     if ((pool.tvlUsd ?? 0) < MIN_TVL_USD) continue;
 
-    const apr = apyPct / 100; // DefiLlama returns whole-percent
+    const apy = apyPct / 100;
+    const apr = (pool.apyBase ?? apyPct) / 100;
     const existing = best.get(asset);
-    if (existing && (existing.apr ?? 0) >= apr) continue;
+    if (existing && (existing.apy ?? 0) >= apy) continue;
 
     best.set(asset, {
       exchange: opts.exchange,
       asset,
       product: opts.product,
       apr,
-      apy: apr,
+      apy,
       minAmount: null,
       currency: 'USD',
       source: 'live',

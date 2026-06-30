@@ -172,8 +172,10 @@ export async function getByAsset(asset: string): Promise<AprSnapshot[]> {
   if (!db) return [];
 
   const pipeline = [
-    { $match: { asset: asset.toUpperCase(), syncedAt: { $gte: freshnessCutoff() } } },
-    { $sort: { syncedAt: -1 } },
+    // Real data only — the comparison never shows sample fixtures, and prefer
+    // the best (highest-APY) live product per exchange for the asset.
+    { $match: { asset: asset.toUpperCase(), source: 'live', syncedAt: { $gte: freshnessCutoff() } } },
+    { $sort: { syncedAt: -1, apy: -1 } },
     { $group: { _id: '$exchange', doc: { $first: '$$ROOT' } } },
     { $replaceRoot: { newRoot: '$doc' } },
     { $sort: { apr: -1 } },

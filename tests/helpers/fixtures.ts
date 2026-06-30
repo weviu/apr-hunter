@@ -35,6 +35,7 @@ export function aprSnapshotFixture(overrides: Partial<{
   asset: string;
   apr: number;
   syncedAt: Date;
+  source: 'live' | 'sample';
 }> = {}) {
   return {
     exchange: overrides.exchange ?? 'binance',
@@ -44,7 +45,7 @@ export function aprSnapshotFixture(overrides: Partial<{
     apy: null,
     minAmount: null,
     currency: 'USD',
-    source: 'sample' as const,
+    source: overrides.source ?? 'sample',
     syncedAt: overrides.syncedAt ?? new Date(),
   };
 }
