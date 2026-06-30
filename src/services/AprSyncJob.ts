@@ -20,7 +20,6 @@ import type { SnapshotInsert } from '@/repositories/aprRepository';
 import { fetchBinanceAprs } from '@/exchanges/binance';
 import { fetchOkxAprs } from '@/exchanges/okx';
 import { fetchKucoinAprs } from '@/exchanges/kucoin';
-import { fetchKrakenAprs } from '@/exchanges/kraken';
 import { fetchAaveAprs } from '@/exchanges/aave';
 import { fetchYearnAprs } from '@/exchanges/yearn';
 import { decrypt } from '@/lib/crypto/encryption';
@@ -48,6 +47,12 @@ export async function runAprSync(): Promise<SyncResult> {
   }
 
   const source: 'live' | 'sample' = snapshots.length > 0 ? 'live' : 'sample';
+
+  // Surface per-exchange failures so a broken/expired key is visible in cron
+  // output instead of silently leaving that exchange's rates to go stale.
+  if (errors.length > 0) {
+    console.warn(`[sync] completed with ${errors.length} exchange failure(s): ${errors.join(' | ')}`);
+  }
 
   if (snapshots.length === 0) {
     console.log('[sync] All live fetches failed or disabled — using sample data');
@@ -104,15 +109,14 @@ async function fetchLiveRates(errors: string[]): Promise<SnapshotInsert[]> {
   return all;
 }
 
-/** Kraken, Aave, Yearn — no auth needed */
+/** Aave, Yearn — DeFi, no auth needed (Kraken's public API was retired) */
 async function fetchPublicExchanges(errors: string[]): Promise<SnapshotInsert[]> {
   const settled = await Promise.allSettled([
-    fetchKrakenAprs(),
     fetchAaveAprs(),
     fetchYearnAprs(),
   ]);
 
-  const names = ['kraken', 'aave', 'yearn'];
+  const names = ['aave', 'yearn'];
   const out: SnapshotInsert[] = [];
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') out.push(...r.value);
@@ -139,6 +143,8 @@ async function fetchAuthenticatedExchanges(errors: string[]): Promise<SnapshotIn
     } catch (e) {
       errors.push(`binance: ${String(e)}`);
     }
+  } else {
+    errors.push('binance: API keys not configured (BINANCE_API_KEY / BINANCE_API_SECRET)');
   }
 
   // ── OKX ──────────────────────────────────────────────────────────────────
@@ -149,6 +155,8 @@ async function fetchAuthenticatedExchanges(errors: string[]): Promise<SnapshotIn
     } catch (e) {
       errors.push(`okx: ${String(e)}`);
     }
+  } else {
+    errors.push('okx: API keys not configured (OKX_API_KEY / OKX_API_SECRET / OKX_PASSPHRASE)');
   }
 
   // ── KuCoin ────────────────────────────────────────────────────────────────
@@ -163,6 +171,8 @@ async function fetchAuthenticatedExchanges(errors: string[]): Promise<SnapshotIn
     } catch (e) {
       errors.push(`kucoin: ${String(e)}`);
     }
+  } else {
+    errors.push('kucoin: API keys not configured (KUCOIN_API_KEY / KUCOIN_API_SECRET / KUCOIN_PASSPHRASE)');
   }
 
   return out;
@@ -193,9 +203,7 @@ export async function fetchRatesForUser(userId: string): Promise<SnapshotInsert[
         case 'kucoin':
           if (passphrase) rows = await fetchKucoinAprs(apiKey, apiSecret, passphrase);
           break;
-        case 'kraken':
-          rows = await fetchKrakenAprs();
-          break;
+        // 'kraken' intentionally unsupported — its public rates API was retired.
       }
       out.push(...rows);
     } catch (e) {

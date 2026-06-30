@@ -155,7 +155,7 @@ export function AprComparison() {
             </thead>
             <tbody className="divide-y divide-hairline">
               {aprData.map((item, index) => {
-                const freshness = getFreshness(item.syncedAt);
+                const freshness = getFreshness(item.syncedAt, item.source);
                 const platformLink = PLATFORM_LINKS[item.exchange];
                 const isTop = sortedData[0]?.id === item.id;
                 const isBottom = sortedData[sortedData.length - 1]?.id === item.id && sortedData.length > 1;

@@ -52,6 +52,22 @@ describe('aprRepository', () => {
     expect(binance?.apr).toBe(0.05); // latest row wins
   });
 
+  it('getLatestAll excludes snapshots older than the freshness window', async () => {
+    const db = await connectTestDb();
+    const stale = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48h ago
+    const fresh = new Date();
+
+    await db.collection('apr_snapshots').insertMany([
+      { ...aprSnapshotFixture({ exchange: 'binance', asset: 'USDT', apr: 0.04 }), syncedAt: stale },
+      { ...aprSnapshotFixture({ exchange: 'okx', asset: 'USDT', apr: 0.06 }), syncedAt: fresh },
+    ]);
+
+    const results = await getLatestAll();
+    // The stale binance row must not surface as a current rate.
+    expect(results).toHaveLength(1);
+    expect(results[0].exchange).toBe('okx');
+  });
+
   it('getLatestAll filters by exchange', async () => {
     await saveSnapshots([
       aprSnapshotFixture({ exchange: 'binance', asset: 'USDT', apr: 0.05 }),

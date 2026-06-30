@@ -76,6 +76,31 @@ async function authenticatedRequest<T>(
   return res.json() as Promise<T>;
 }
 
+// ─── Key verification ──────────────────────────────────────────────────────────
+
+/**
+ * Verify KuCoin credentials with a single read-only accounts call.
+ * Throws if the credentials are rejected; resolves if they authenticate.
+ *
+ * KuCoin returns HTTP 200 with a non-"200000" `code` for some auth failures,
+ * so we check the body too rather than relying on the HTTP status alone.
+ */
+export async function verifyKucoinKey(
+  apiKey: string,
+  secretKey: string,
+  passphrase: string,
+): Promise<void> {
+  const res = await authenticatedRequest<{ code: string; msg?: string }>(
+    '/api/v1/accounts',
+    apiKey,
+    secretKey,
+    passphrase,
+  );
+  if (res?.code !== '200000') {
+    throw new Error(`KuCoin key verification failed: ${res?.msg || res?.code || 'unknown error'}`);
+  }
+}
+
 // ─── APR fetch ───────────────────────────────────────────────────────────────
 
 const APR_FIELDS = [
@@ -91,6 +116,12 @@ const ENDPOINTS = [
   { path: '/api/v1/earn/staking/products', type: 'staking'  },
 ];
 
+/**
+ * Per-endpoint failures are tolerated (KuCoin's v1/v3 paths are inconsistent),
+ * but if EVERY request fails — the signature of an auth/network outage — this
+ * throws so the caller can record the failure instead of mistaking it for
+ * "no rates".
+ */
 export async function fetchKucoinAprs(
   apiKey: string,
   secretKey: string,
@@ -98,6 +129,7 @@ export async function fetchKucoinAprs(
 ): Promise<SnapshotInsert[]> {
   const results: SnapshotInsert[] = [];
   const syncedAt = new Date();
+  let failed = 0;
 
   for (const ep of ENDPOINTS) {
     try {
@@ -106,7 +138,10 @@ export async function fetchKucoinAprs(
         data?: unknown;
       }>(ep.path, apiKey, secretKey, passphrase);
 
-      if (data?.code !== '200000' || !data.data) continue;
+      if (data?.code !== '200000' || !data.data) {
+        failed++;
+        continue;
+      }
 
       const items = Array.isArray(data.data)
         ? (data.data as Record<string, unknown>[])
@@ -159,8 +194,13 @@ export async function fetchKucoinAprs(
         });
       }
     } catch (e) {
+      failed++;
       console.warn(`[kucoin] ${ep.path} failed:`, e);
     }
+  }
+
+  if (failed === ENDPOINTS.length) {
+    throw new Error(`KuCoin: all ${ENDPOINTS.length} earn requests failed (likely auth or network error)`);
   }
 
   return results;

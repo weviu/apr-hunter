@@ -147,11 +147,11 @@ export default function Home() {
                   More exchanges coming soon
                 </h2>
                 <p className="mx-auto mt-4 max-w-2xl text-fg-muted">
-                  We already pull from OKX Earn, KuCoin, and Binance. Next up are Kraken and select DeFi
-                  protocols. Sign up so you&apos;ll know as soon as new sources go live.
+                  We pull live rates from OKX, KuCoin, and Binance, plus DeFi yields from Aave and Yearn.
+                  Kraken is next. Sign up so you&apos;ll know as soon as new sources go live.
                 </p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-                  {['OKX ✓', 'KuCoin ✓', 'Binance ✓', 'Kraken (soon)', 'Aave (soon)', 'Yearn (soon)'].map(
+                  {['OKX ✓', 'KuCoin ✓', 'Binance ✓', 'Aave ✓', 'Yearn ✓', 'Kraken (soon)'].map(
                     (label) => (
                       <div
                         key={label}

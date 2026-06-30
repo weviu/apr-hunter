@@ -10,7 +10,7 @@ import { useWeb3Chains } from '@/hooks/useWeb3Chains';
 import { Card, FadeRise, Stagger, StaggerItem } from '@/components/ui';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const { selectedChainIds, availableChains, toggleChain, resetToDefaults } = useWeb3Chains();
   const [mounted, setMounted] = useState(false);
@@ -20,10 +20,23 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
+    // Wait for the session check to finish before redirecting, otherwise a
+    // refresh bounces a logged-in user to /login before /api/auth/me resolves.
+    if (!isLoading && !user) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-canvas">
+        <Header />
+        <div className="flex h-[calc(100vh-80px)] items-center justify-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-hairline border-t-accent" />
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 

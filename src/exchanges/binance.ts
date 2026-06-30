@@ -39,12 +39,35 @@ async function authenticatedRequest<T>(
   return res.json() as Promise<T>;
 }
 
+// ─── Key verification ──────────────────────────────────────────────────────────
+
+/**
+ * Verify Binance credentials with a single read-only account call.
+ * Throws if the credentials are rejected; resolves if they authenticate.
+ *
+ * Uses GET /api/v3/account — the standard signed account-info endpoint, which
+ * only needs the always-on "Enable Reading" permission that every key (incl.
+ * Simple-Earn-only keys) has. Unlike fetchBinanceAprs, this does NOT swallow
+ * errors — it is used to prove the keys actually work.
+ */
+export async function verifyBinanceKey(apiKey: string, secretKey: string): Promise<void> {
+  await authenticatedRequest('/api/v3/account', {}, apiKey, secretKey);
+}
+
 // ─── APR fetch ───────────────────────────────────────────────────────────────
 
-/** Fetch current APR rates from Binance Simple Earn (flexible + locked). */
+/**
+ * Fetch current APR rates from Binance Simple Earn (flexible + locked).
+ *
+ * Per-endpoint failures are tolerated (a partial result is still useful), but
+ * if EVERY request fails — the signature of an auth/network outage — this throws
+ * so the caller can record the failure instead of mistaking it for "no rates".
+ */
 export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promise<SnapshotInsert[]> {
   const results: SnapshotInsert[] = [];
   const syncedAt = new Date();
+  const failures: string[] = [];
+  const attempts = 2;
 
   // Flexible Simple Earn
   try {
@@ -57,7 +80,9 @@ export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promi
       }[];
     }>('/sapi/v1/simple-earn/flexible/list', { size: '100' }, apiKey, secretKey);
 
-    if (Array.isArray(flexible?.rows)) {
+    if (!Array.isArray(flexible?.rows)) {
+      failures.push('flexible: unexpected response shape');
+    } else {
       for (const product of flexible.rows) {
         const asset = String(product.asset || '').toUpperCase();
         if (!asset) continue;
@@ -80,6 +105,7 @@ export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promi
       }
     }
   } catch (e) {
+    failures.push(`flexible: ${String(e)}`);
     console.warn('[binance] Flexible earn fetch failed:', e);
   }
 
@@ -95,7 +121,9 @@ export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promi
       }[];
     }>('/sapi/v1/simple-earn/locked/list', { size: '100' }, apiKey, secretKey);
 
-    if (Array.isArray(locked?.rows)) {
+    if (!Array.isArray(locked?.rows)) {
+      failures.push('locked: unexpected response shape');
+    } else {
       for (const product of locked.rows) {
         const asset = String(product.asset || '').toUpperCase();
         if (!asset) continue;
@@ -128,7 +156,12 @@ export async function fetchBinanceAprs(apiKey: string, secretKey: string): Promi
       }
     }
   } catch (e) {
+    failures.push(`locked: ${String(e)}`);
     console.warn('[binance] Locked earn fetch failed:', e);
+  }
+
+  if (failures.length === attempts) {
+    throw new Error(`Binance: all ${attempts} requests failed — ${failures.join('; ')}`);
   }
 
   return results;

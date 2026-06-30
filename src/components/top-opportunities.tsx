@@ -1,10 +1,13 @@
 'use client';
 
-import { TrendingUp, ExternalLink, Clock, RefreshCw, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { useState } from 'react';
+import { TrendingUp, ExternalLink, Clock, RefreshCw, ChevronDown, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { AprSnapshot, AprTrendResult } from '@/types/apr';
 import { useTopRates, useAprTrends } from '@/hooks/useApr';
-import { PLATFORM_LINKS, formatApr, getProductLabel, getFreshness } from '@/lib/utils/apr-utils';
+import { PLATFORM_LINKS, formatApr, getProductLabel, getExchangeType, getFreshness } from '@/lib/utils/apr-utils';
 import { Card, Skeleton } from '@/components/ui';
+
+const LIMIT_OPTIONS = [10, 15, 20, 30];
 
 function getTrendBadge(trends: AprTrendResult[], exchange: string, asset: string) {
   const t = trends.find(
@@ -40,7 +43,9 @@ function getTrendBadge(trends: AprTrendResult[], exchange: string, asset: string
 }
 
 export function TopOpportunities() {
-  const { data: opportunities = [], isLoading, error, refetch, isFetching } = useTopRates(10);
+  const [limit, setLimit] = useState(10);
+  const [limitMenuOpen, setLimitMenuOpen] = useState(false);
+  const { data: opportunities = [], isLoading, error, refetch, isFetching } = useTopRates(limit);
   const { data: trends = [] } = useAprTrends(50);
 
   if (isLoading) {
@@ -69,13 +74,57 @@ export function TopOpportunities() {
           <span>Auto-updates every 30s</span>
           {isFetching && <RefreshCw className="h-4 w-4 animate-spin text-accent" />}
         </div>
-        <button
-          onClick={() => void refetch()}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-accent transition hover:bg-accent-soft"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* How many opportunities to show */}
+          <div className="relative">
+            <button
+              onClick={() => setLimitMenuOpen((o) => !o)}
+              aria-label="Number of opportunities to show"
+              aria-expanded={limitMenuOpen}
+              className="flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-sm text-fg-muted transition hover:bg-surface-hover hover:text-fg"
+            >
+              Top {limit}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+            {limitMenuOpen && (
+              <>
+                <button
+                  aria-hidden
+                  tabIndex={-1}
+                  onClick={() => setLimitMenuOpen(false)}
+                  className="fixed inset-0 z-10 cursor-default"
+                />
+                <div className="absolute right-0 z-20 mt-1 min-w-[4.5rem] overflow-hidden rounded-md border border-hairline bg-surface shadow-overlay">
+                  {LIMIT_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => {
+                        setLimit(n);
+                        setLimitMenuOpen(false);
+                      }}
+                      className={`block w-full px-3 py-1.5 text-left text-sm transition hover:bg-surface-hover ${
+                        n === limit ? 'text-accent' : 'text-fg-muted'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Refresh (icon only) */}
+          <button
+            onClick={() => void refetch()}
+            aria-label="Refresh"
+            title="Refresh"
+            className="flex items-center rounded-md px-2 py-1 text-accent transition hover:bg-accent-soft"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {opportunities.length === 0 ? (
@@ -83,8 +132,9 @@ export function TopOpportunities() {
       ) : (
         <div className="space-y-3">
           {(opportunities as AprSnapshot[]).map((item, index) => {
-            const freshness = getFreshness(item.syncedAt);
+            const freshness = getFreshness(item.syncedAt, item.source);
             const platformLink = PLATFORM_LINKS[item.exchange];
+            const exchangeType = getExchangeType(item.exchange);
 
             return (
               <div
@@ -116,6 +166,15 @@ export function TopOpportunities() {
                           {getProductLabel(item.product)}
                         </span>
                       )}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          exchangeType === 'DeFi'
+                            ? 'bg-success-soft text-success'
+                            : 'border border-hairline text-fg-muted'
+                        }`}
+                      >
+                        {exchangeType}
+                      </span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className={`flex items-center gap-1 text-xs ${freshness.color}`}>

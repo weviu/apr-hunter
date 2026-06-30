@@ -5,6 +5,20 @@ import { AprSnapshot, AprHistoryEntry, AprTrendResult } from '@/types/apr';
 const SNAPSHOTS = 'apr_snapshots';
 const HISTORY = 'apr_history';
 
+/**
+ * Snapshots older than this are excluded from "current rate" listings, so a
+ * silently-failed sync can't keep surfacing weeks-old APRs as if they were live.
+ * The sync writes fresh snapshots (live or sample) every cycle, so anything
+ * older than this means that (exchange, asset) has had no successful sync since.
+ * History/trend reads are intentionally NOT filtered — they're time-series.
+ */
+const MAX_SNAPSHOT_AGE_MS = 24 * 60 * 60 * 1000; // 24h
+
+/** Cutoff Date for the freshness filter on current-rate reads. */
+function freshnessCutoff(): Date {
+  return new Date(Date.now() - MAX_SNAPSHOT_AGE_MS);
+}
+
 // ─── Internal document types ─────────────────────────────────────────────────
 
 interface SnapshotDoc {
@@ -108,13 +122,15 @@ export async function getLatestAll(filters?: {
   const db = await getMongoDb();
   if (!db) return [];
 
-  const match: Record<string, unknown> = {};
+  const match: Record<string, unknown> = { syncedAt: { $gte: freshnessCutoff() } };
   if (filters?.exchange) match.exchange = filters.exchange;
   if (filters?.asset) match.asset = filters.asset.toUpperCase();
 
   const pipeline = [
-    ...(Object.keys(match).length ? [{ $match: match }] : []),
-    { $sort: { syncedAt: -1 } },
+    { $match: match },
+    // Newest sync first, then highest APR — so $first is the best current
+    // product for each (exchange, asset) when an exchange has several.
+    { $sort: { syncedAt: -1, apr: -1 } },
     { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
     { $replaceRoot: { newRoot: '$doc' } },
     { $sort: { apr: -1 } },
@@ -130,7 +146,9 @@ export async function getTop(limit = 10): Promise<AprSnapshot[]> {
   if (!db) return [];
 
   const pipeline = [
-    { $sort: { syncedAt: -1 } },
+    { $match: { syncedAt: { $gte: freshnessCutoff() } } },
+    // Newest sync first, then highest APR — see getLatestAll.
+    { $sort: { syncedAt: -1, apr: -1 } },
     { $group: { _id: { exchange: '$exchange', asset: '$asset' }, doc: { $first: '$$ROOT' } } },
     { $replaceRoot: { newRoot: '$doc' } },
     { $sort: { apr: -1 } },
@@ -154,7 +172,7 @@ export async function getByAsset(asset: string): Promise<AprSnapshot[]> {
   if (!db) return [];
 
   const pipeline = [
-    { $match: { asset: asset.toUpperCase() } },
+    { $match: { asset: asset.toUpperCase(), syncedAt: { $gte: freshnessCutoff() } } },
     { $sort: { syncedAt: -1 } },
     { $group: { _id: '$exchange', doc: { $first: '$$ROOT' } } },
     { $replaceRoot: { newRoot: '$doc' } },

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchKucoinAprs } from '@/exchanges/kucoin';
+import { fetchKucoinAprs, verifyKucoinKey } from '@/exchanges/kucoin';
 
 const API_KEY    = 'test-key';
 const SECRET     = 'test-secret';
@@ -82,11 +82,58 @@ describe('kucoin adapter', () => {
     expect(eth[0].apr).toBeCloseTo(0.042, 4); // highest rate
   });
 
-  it('returns empty array and does not throw on API error', async () => {
+  it('throws when every endpoint fails (total auth/network failure)', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       new Response('Unauthorized', { status: 401 }),
     );
+    await expect(fetchKucoinAprs(API_KEY, SECRET, PASSPHRASE)).rejects.toThrow(/all 4 earn requests failed/);
+  });
+
+  it('returns partial results when some endpoints fail but one succeeds', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const u = url.toString();
+      if (u.includes('/api/v3/earn/saving/products')) {
+        return mockResponse({ code: '200000', data: [{ currency: 'USDT', recentApy: '0.048' }] });
+      }
+      return new Response('Unauthorized', { status: 401 }); // the other 3 fail
+    });
+
+    const results = await fetchKucoinAprs(API_KEY, SECRET, PASSPHRASE);
+    expect(results.find((r) => r.asset === 'USDT')).toBeDefined();
+  });
+
+  it('does not throw when endpoints succeed with no products (legitimately empty)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      mockResponse({ code: '200000', data: [] }),
+    );
     const results = await fetchKucoinAprs(API_KEY, SECRET, PASSPHRASE);
     expect(results).toEqual([]);
+  });
+});
+
+describe('verifyKucoinKey', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('resolves when the accounts endpoint returns code "200000"', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      mockResponse({ code: '200000', data: [] }),
+    );
+    await expect(verifyKucoinKey(API_KEY, SECRET, PASSPHRASE)).resolves.toBeUndefined();
+  });
+
+  it('throws on HTTP auth failure', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response('Unauthorized', { status: 401 }),
+    );
+    await expect(verifyKucoinKey(API_KEY, SECRET, PASSPHRASE)).rejects.toThrow();
+  });
+
+  it('throws when the body carries a non-"200000" error code (HTTP 200)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      mockResponse({ code: '400003', msg: 'KC-API-KEY not exists' }),
+    );
+    await expect(verifyKucoinKey(API_KEY, SECRET, PASSPHRASE)).rejects.toThrow(/not exists/);
   });
 });

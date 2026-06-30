@@ -13,6 +13,46 @@
  */
 
 import { z } from 'zod';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
+// ─── Secrets file loader ─────────────────────────────────────────────────────
+
+/**
+ * Next.js auto-loads .env / .env.local / .env.production — but NOT .env.secrets.
+ * This project keeps the exchange API keys and ENABLE_LIVE_EXCHANGE_FETCH in
+ * .env.secrets, so without this they never reach process.env and the sync
+ * silently skips binance/okx/kucoin. Load it once, on the server, before
+ * validation. Values already in the environment (real env, .env) take
+ * precedence, preserving Next's normal ordering.
+ */
+function loadEnvSecrets(): void {
+  if (typeof window !== 'undefined') return; // server only
+  try {
+    const file = path.resolve(process.cwd(), '.env.secrets');
+    if (!existsSync(file)) return;
+    for (const raw of readFileSync(file, 'utf8').split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eq = line.indexOf('=');
+      if (eq === -1) continue;
+      const key = line.slice(0, eq).replace(/^export\s+/, '').trim();
+      if (!key || process.env[key] !== undefined) continue;
+      let value = line.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      process.env[key] = value;
+    }
+  } catch {
+    // Non-fatal: fall back to whatever is already in the environment.
+  }
+}
+
+loadEnvSecrets();
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 

@@ -7,6 +7,9 @@ interface ExchangeKeyEntry {
   exchange: string;
   hasKey: boolean;
   lastVerifiedAt: string | null;
+  apiKeyLength: number;
+  apiSecretLength: number;
+  passphraseLength: number;
 }
 
 interface ApiResponse<T> {
@@ -47,6 +50,28 @@ export function useSaveExchangeKeys() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exchange-keys'] });
       queryClient.invalidateQueries({ queryKey: ['exchange-connected'] });
+    },
+  });
+}
+
+/**
+ * Test exchange API keys without saving them.
+ * Resolves on success; throws with the API error message on failure.
+ */
+export function useVerifyExchangeKeys() {
+  return useMutation({
+    mutationFn: async (payload: {
+      exchange: string;
+      // Omit apiKey/apiSecret to test the keys already saved for this exchange.
+      apiKey?: string;
+      apiSecret?: string;
+      passphrase?: string;
+    }) => {
+      const res = await api.post<ApiResponse<{ exchange: string; verified: boolean }>>(
+        '/api/exchanges/verify',
+        payload,
+      );
+      return (res.data as ApiResponse<{ exchange: string; verified: boolean }>).data;
     },
   });
 }

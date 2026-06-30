@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchBinanceAprs } from '@/exchanges/binance';
+import { fetchBinanceAprs, verifyBinanceKey } from '@/exchanges/binance';
 
 const API_KEY = 'test-key';
 const SECRET  = 'test-secret';
@@ -67,13 +67,26 @@ describe('binance adapter', () => {
     expect(eth?.product).toBe('60-Day Locked');
   });
 
-  it('returns empty array and does not throw on API error', async () => {
+  it('throws when every request fails (total auth/network failure)', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       return new Response('{"code":-1001,"msg":"Unauthorized"}', { status: 401 });
     });
 
+    await expect(fetchBinanceAprs(API_KEY, SECRET)).rejects.toThrow(/all 2 requests failed/);
+  });
+
+  it('returns partial results when only one endpoint fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const u = url.toString();
+      if (u.includes('flexible/list')) {
+        return mockResponse({ rows: [{ asset: 'USDT', latestAnnualPercentageRate: '0.05' }] });
+      }
+      return new Response('Unauthorized', { status: 401 }); // locked fails
+    });
+
     const results = await fetchBinanceAprs(API_KEY, SECRET);
-    expect(results).toEqual([]);
+    expect(results.length).toBe(1);
+    expect(results[0].asset).toBe('USDT');
   });
 
   it('all returned APRs are decimals (< 1 for typical rates)', async () => {
@@ -92,5 +105,25 @@ describe('binance adapter', () => {
       expect(r.apr).toBeGreaterThan(0);
       expect(r.apr).toBeLessThan(1);
     });
+  });
+});
+
+describe('verifyBinanceKey', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('resolves when the account endpoint authenticates', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      mockResponse({ accountType: 'SPOT', balances: [] }),
+    );
+    await expect(verifyBinanceKey(API_KEY, SECRET)).resolves.toBeUndefined();
+  });
+
+  it('throws when the credentials are rejected', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response('{"code":-2015,"msg":"Invalid API-key"}', { status: 401 }),
+    );
+    await expect(verifyBinanceKey(API_KEY, SECRET)).rejects.toThrow();
   });
 });

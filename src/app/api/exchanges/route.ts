@@ -7,13 +7,20 @@ import {
   deleteExchangeKey,
   type Exchange,
 } from '@/repositories/exchangeKeyRepository';
-import { encrypt } from '@/lib/crypto/encryption';
-import { fetchBinanceAprs } from '@/exchanges/binance';
-import { fetchOkxAprs } from '@/exchanges/okx';
-import { fetchKucoinAprs } from '@/exchanges/kucoin';
-import { fetchKrakenAprs } from '@/exchanges/kraken';
+import { encrypt, decrypt } from '@/lib/crypto/encryption';
+import { verifyExchangeKey } from '@/lib/exchanges/verifyExchangeKey';
 
 const VALID_EXCHANGES: Exchange[] = ['binance', 'okx', 'kucoin', 'kraken'];
+
+/** Plaintext length of an encrypted field, used to render masked dots client-side. 0 if undecryptable. */
+function decryptedLength(ciphertext: string | null | undefined): number {
+  if (!ciphertext) return 0;
+  try {
+    return decrypt(ciphertext).length;
+  } catch {
+    return 0;
+  }
+}
 
 export const GET = withAuth(async (_request: NextRequest, session) => {
   const keys = await findExchangeKeysByUserId(session.user.id);
@@ -21,6 +28,10 @@ export const GET = withAuth(async (_request: NextRequest, session) => {
     exchange: k.exchange,
     hasKey: true,
     lastVerifiedAt: k.lastVerifiedAt?.toISOString() ?? null,
+    // Lengths (not the secrets) so the UI can show masked dots for a saved card.
+    apiKeyLength: decryptedLength(k.apiKey),
+    apiSecretLength: decryptedLength(k.apiSecret),
+    passphraseLength: decryptedLength(k.passphrase),
   }));
   return ok(data);
 });
@@ -83,29 +94,3 @@ export const DELETE = withAuth(async (request: NextRequest, session) => {
 
   return ok({ exchange });
 });
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-async function verifyExchangeKey(
-  exchange: Exchange,
-  apiKey: string,
-  apiSecret: string,
-  passphrase?: string,
-): Promise<void> {
-  switch (exchange) {
-    case 'binance':
-      await fetchBinanceAprs(apiKey, apiSecret);
-      break;
-    case 'okx':
-      if (!passphrase) throw new Error('passphrase required for OKX');
-      await fetchOkxAprs(apiKey, apiSecret, passphrase);
-      break;
-    case 'kucoin':
-      if (!passphrase) throw new Error('passphrase required for KuCoin');
-      await fetchKucoinAprs(apiKey, apiSecret, passphrase);
-      break;
-    case 'kraken':
-      await fetchKrakenAprs(); // public — no key needed to verify
-      break;
-  }
-}

@@ -15,18 +15,33 @@ export function formatApr(apr: number): string {
 
 export function getProductLabel(source?: string): string {
   if (!source) return 'Earn';
-  if (source.includes('staking')) return 'Staking';
-  if (source.includes('lending') || source.includes('supply')) return 'Lending';
-  if (source.includes('vault')) return 'Vault';
+  const s = source.toLowerCase();
+  if (s.includes('staking')) return 'Staking';
+  if (s.includes('locked')) return 'Locked';
+  if (s.includes('lending') || s.includes('supply')) return 'Lending';
+  if (s.includes('vault')) return 'Vault';
   return 'Earn';
 }
 
+/** DeFi protocols vs centralized exchanges — drives the CEX/DeFi badge. */
+const DEFI_EXCHANGES = new Set(['aave', 'yearn']);
+
+export function getExchangeType(exchange: string): 'CEX' | 'DeFi' {
+  return DEFI_EXCHANGES.has(exchange.toLowerCase()) ? 'DeFi' : 'CEX';
+}
+
 /** Returns a human-readable freshness label based on a UTC ISO timestamp. */
-export function getFreshness(lastUpdated?: string): {
+export function getFreshness(lastUpdated?: string, source?: string): {
   label: string;
   color: string;
   dotColor: string;
 } {
+  // Sample/demo fixtures are re-stamped with a fresh syncedAt every sync cycle,
+  // so they'd otherwise read as "Live". Label them honestly regardless of age.
+  if (source === 'sample') {
+    return { label: 'Sample data', color: 'text-yellow-500', dotColor: 'bg-yellow-500' };
+  }
+
   if (!lastUpdated) return { label: 'Unknown', color: 'text-gray-400', dotColor: 'bg-gray-400' };
 
   const diffMinutes = Math.floor(
