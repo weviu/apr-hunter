@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useMetaMask } from '@/lib/web3/useMetaMask';
 import { Wallet, Loader2, Download } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import {
@@ -23,8 +22,7 @@ const keyOf = (p: DetectedAavePosition) => `${p.walletAddress}-${p.asset}`;
  * import detected positions. Lives on the My Positions page header.
  */
 export function Web3Scan() {
-  const { address, isConnected } = useAccount();
-  const { openConnectModal } = useConnectModal();
+  const { address, isConnected, connectMetaMask } = useMetaMask();
   const scan = useScanAave();
   const createPosition = useCreatePosition();
 
@@ -70,7 +68,7 @@ export function Web3Scan() {
       <Button
         variant="secondary"
         leftIcon={<Wallet size={16} />}
-        onClick={isConnected ? runScan : () => openConnectModal?.()}
+        onClick={isConnected ? runScan : connectMetaMask}
       >
         {isConnected ? 'Scan Wallet' : 'Connect Wallet'}
       </Button>

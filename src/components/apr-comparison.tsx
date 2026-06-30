@@ -253,7 +253,7 @@ export function AprComparison() {
           {', plus DeFi yields from '}
           <a href="https://app.aave.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Aave</a>
           {' and '}
-          <a href="https://yearn.fi" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Yearn</a>
+          <a href="https://yearn.fi/vaults" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Yearn</a>
           {' (via '}
           <a href="https://defillama.com/yields" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">DefiLlama</a>
           ). Real rates, updated every 30 seconds.

@@ -6,7 +6,7 @@ export const PLATFORM_LINKS: Record<string, string> = {
   kucoin: 'https://www.kucoin.com/earn',
   kraken: 'https://www.kraken.com/learn/what-is-crypto-staking',
   aave: 'https://app.aave.com',
-  yearn: 'https://yearn.fi',
+  yearn: 'https://yearn.fi/vaults',
 };
 
 export function formatApr(apr: number): string {

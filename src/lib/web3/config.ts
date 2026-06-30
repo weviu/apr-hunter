@@ -1,10 +1,4 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import {
-  metaMaskWallet,
-  rainbowWallet,
-  walletConnectWallet,
-  coinbaseWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+import { createConfig, http } from 'wagmi';
 import {
   mainnet,
   polygon,
@@ -13,6 +7,7 @@ import {
   base,
   sepolia,
 } from 'wagmi/chains';
+import { injected } from 'wagmi/connectors';
 import { defineChain } from 'viem';
 
 // Polygon Amoy Testnet
@@ -29,28 +24,23 @@ const amoy = defineChain({
   testnet: true,
 });
 
-export const wagmiConfig = getDefaultConfig({
-  appName: 'APR Hunter',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'default_project_id',
-  chains: [
-    mainnet,
-    polygon,
-    optimism,
-    arbitrum,
-    base,
-    sepolia,
-    amoy as any, // Polygon testnet
-  ],
+/**
+ * MetaMask-only wagmi config (no RainbowKit / WalletConnect).
+ *
+ * The injected connector targets the MetaMask browser extension directly, so
+ * `connect()` opens MetaMask itself rather than a third-party modal.
+ */
+export const wagmiConfig = createConfig({
+  chains: [mainnet, polygon, optimism, arbitrum, base, sepolia, amoy],
+  connectors: [injected({ target: 'metaMask' })],
+  transports: {
+    [mainnet.id]: http(),
+    [polygon.id]: http(),
+    [optimism.id]: http(),
+    [arbitrum.id]: http(),
+    [base.id]: http(),
+    [sepolia.id]: http(),
+    [amoy.id]: http(),
+  },
   ssr: true, // next.js server rendering
-  wallets: [
-    {
-      groupName: 'Popular',
-      wallets: [
-        metaMaskWallet,
-        rainbowWallet,
-        walletConnectWallet,
-        coinbaseWallet,
-      ],
-    },
-  ],
 });

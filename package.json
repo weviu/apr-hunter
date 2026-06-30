@@ -13,8 +13,6 @@
     "test:smoke": "vitest run tests/smoke"
   },
   "dependencies": {
-    "@metamask/sdk": "^0.28.4",
-    "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.12",
     "bcrypt": "^5.1.1",
     "framer-motion": "^12.42.0",
