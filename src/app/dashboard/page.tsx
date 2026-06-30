@@ -9,7 +9,7 @@ import { useUserPositions, usePrices, useRemovePosition } from '@/hooks/useMyPos
 import { AddPositionModal } from '@/components/AddPositionModal';
 import { Web3Scan } from '@/components/Web3Scan';
 import { ExchangeScan } from '@/components/ExchangeScan';
-import { Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
+import { Button, Card, FadeRise, Modal, Skeleton, Stagger, StaggerItem } from '@/components/ui';
 import { formatApr, getFreshness } from '@/lib/utils/apr-utils';
 import type { EnrichedPosition } from '@/types/portfolio';
 
@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: positions = [], isLoading: loadingPositions } = useUserPositions();
   const symbols = useMemo(() => positions.map((p) => p.asset), [positions]);
@@ -160,19 +161,17 @@ export default function DashboardPage() {
             </Card>
           </FadeRise>
         ) : (
-          <Stagger className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {positions.map((p) => {
               const value = valueOf(p);
               const apr = p.currentApr ?? p.aprAtEntry;
               const fresh = getFreshness(p.aprSyncedAt ?? undefined);
               const removing = removePosition.isPending && removePosition.variables === p.id;
               return (
-                <StaggerItem key={p.id}>
+                <FadeRise key={p.id}>
                   <Card className="group relative p-5">
                     <button
-                      onClick={() => {
-                        if (confirm('Remove this position?')) removePosition.mutate(p.id);
-                      }}
+                      onClick={() => setConfirmId(p.id)}
                       disabled={removing}
                       className="absolute right-3 top-3 rounded-md p-1.5 text-fg-faint opacity-0 transition hover:bg-danger-soft hover:text-danger group-hover:opacity-100 disabled:opacity-50"
                       title="Remove position"
@@ -211,14 +210,57 @@ export default function DashboardPage() {
                       ) : null}
                     </div>
                   </Card>
-                </StaggerItem>
+                </FadeRise>
               );
             })}
-          </Stagger>
+          </div>
         )}
       </main>
 
       <AddPositionModal open={addOpen} onClose={() => setAddOpen(false)} />
+
+      <Modal
+        open={confirmId !== null}
+        onClose={() => setConfirmId(null)}
+        title="Remove position?"
+        size="sm"
+        dismissible={!removePosition.isPending}
+      >
+        {(() => {
+          const target = positions.find((p) => p.id === confirmId);
+          return (
+            <>
+              <p className="text-sm text-fg-muted">
+                This stops tracking{' '}
+                <span className="font-medium text-fg">{target?.asset ?? 'this position'}</span>
+                {target?.exchange ? ` on ${target.exchange}` : ''}. It won&apos;t touch any funds on
+                the exchange.
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setConfirmId(null)}
+                  disabled={removePosition.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  className="border-danger/30 bg-danger-soft"
+                  loading={removePosition.isPending}
+                  onClick={() => {
+                    if (confirmId) {
+                      removePosition.mutate(confirmId, { onSuccess: () => setConfirmId(null) });
+                    }
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            </>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }
