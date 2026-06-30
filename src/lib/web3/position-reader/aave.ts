@@ -218,6 +218,7 @@ function getChainName(chainId: number): string {
   const chainNames: Record<number, string> = {
     1: 'Ethereum',
     11155111: 'Sepolia',
+    84532: 'Base Sepolia',
     137: 'Polygon',
     42161: 'Arbitrum',
     10: 'Optimism',

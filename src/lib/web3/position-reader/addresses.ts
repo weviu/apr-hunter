@@ -58,6 +58,14 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
     },
   },
 
+  // Base Sepolia Testnet (Aave V3) — addresses from @bgd-labs/aave-address-book
+  84532: {
+    aave: {
+      poolV3: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
+      poolDataProvider: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
+    },
+  },
+
   // Polygon Mainnet
   137: {
     lido: {

@@ -3,7 +3,7 @@
  */
 
 import { createPublicClient, http, PublicClient, defineChain } from 'viem';
-import { mainnet, polygon, arbitrum, optimism, sepolia } from 'viem/chains';
+import { mainnet, polygon, arbitrum, optimism, sepolia, baseSepolia } from 'viem/chains';
 import type { Chain } from 'viem';
 
 // TractSafe Testnet definition
@@ -24,6 +24,7 @@ const tractsafe = defineChain({
 const CHAIN_MAP: Record<number, Chain> = {
   1: mainnet,
   11155111: sepolia,
+  84532: baseSepolia,
   137: polygon,
   42161: arbitrum,
   10: optimism,
