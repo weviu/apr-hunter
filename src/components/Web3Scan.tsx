@@ -22,7 +22,7 @@ const keyOf = (p: DetectedAavePosition) => `${p.walletAddress}-${p.asset}`;
  * import detected positions. Lives on the My Positions page header.
  */
 export function Web3Scan() {
-  const { address, isConnected, connectMetaMask } = useMetaMask();
+  const { address, chainId, isConnected, connectMetaMask } = useMetaMask();
   const scan = useScanAave();
   const createPosition = useCreatePosition();
 
@@ -41,7 +41,7 @@ export function Web3Scan() {
     setUsedDemo(false);
     setOpen(true);
     try {
-      const data = await scan.mutateAsync(address);
+      const data = await scan.mutateAsync({ address, chainId });
       setResults(data.positions);
       setUsedDemo(data.usedDemo);
     } catch (e) {

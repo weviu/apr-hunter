@@ -92,13 +92,13 @@ export function useCreatePosition() {
   });
 }
 
-/** Scan a wallet for Aave V3 supply positions (server-side, Sepolia). */
+/** Scan a wallet for Aave V3 supply positions on the connected network (server-side). */
 export function useScanAave() {
   return useMutation({
-    mutationFn: async (address: string | undefined) => {
+    mutationFn: async (input: { address: string | undefined; chainId?: number }) => {
       const res = await api.post<Env<{ positions: DetectedAavePosition[]; usedDemo: boolean }>>(
         '/api/web3/scan-aave',
-        { address },
+        { address: input.address, chainId: input.chainId },
       );
       return (res.data as Env<{ positions: DetectedAavePosition[]; usedDemo: boolean }>).data ?? {
         positions: [],

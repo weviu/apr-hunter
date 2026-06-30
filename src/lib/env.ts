@@ -88,6 +88,7 @@ const serverSchema = z.object({
 
   // Web3 (server-side reads for wallet auto-detect)
   RPC_URL_SEPOLIA: z.string().url().optional(),
+  RPC_URL_BASE_SEPOLIA: z.string().url().optional(),
   DEMO_WALLET_ADDRESS: z.string().optional(),
 });
 
