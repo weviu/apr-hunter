@@ -14,6 +14,7 @@
  */
 import { env } from '@/lib/env';
 import { sampleAprData } from '@/lib/data/sampleAprRates';
+import { shouldTrackSnapshot } from '@/lib/data/trackedAssets';
 import { saveSnapshots, appendHistory } from '@/repositories/aprRepository';
 import { findExchangeKeysByUserId } from '@/repositories/exchangeKeyRepository';
 import type { SnapshotInsert } from '@/repositories/aprRepository';
@@ -44,6 +45,9 @@ export async function runAprSync(): Promise<SyncResult> {
 
   if (env.ENABLE_LIVE_EXCHANGE_FETCH === 'true') {
     snapshots = await fetchLiveRates(errors);
+    // Drop CEX rows for non-allowlisted assets (meme/micro-cap noise). DeFi
+    // rows pass through — see trackedAssets.ts.
+    snapshots = snapshots.filter((s) => shouldTrackSnapshot(s.exchange, s.asset));
   }
 
   const source: 'live' | 'sample' = snapshots.length > 0 ? 'live' : 'sample';

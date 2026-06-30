@@ -49,9 +49,17 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
 
+  // Keep the latest onClose/dismissible without making them effect deps —
+  // callers often pass an inline onClose, and re-running the focus/scroll-lock
+  // effect on every parent render bounces focus and makes the modal flicker.
+  const onCloseRef = useRef(onClose);
+  const dismissibleRef = useRef(dismissible);
+  onCloseRef.current = onClose;
+  dismissibleRef.current = dismissible;
+
   useEffect(() => setMounted(true), []);
 
-  // ESC to close + body scroll lock while open.
+  // ESC to close + body scroll lock while open. Runs only when `open` flips.
   useEffect(() => {
     if (!open) return;
 
@@ -60,7 +68,7 @@ export function Modal({
     document.body.style.overflow = 'hidden';
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissible) onClose();
+      if (e.key === 'Escape' && dismissibleRef.current) onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
 
@@ -73,7 +81,7 @@ export function Modal({
       window.clearTimeout(t);
       lastFocused.current?.focus?.();
     };
-  }, [open, dismissible, onClose]);
+  }, [open]);
 
   if (!mounted) return null;
 

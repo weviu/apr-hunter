@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useUserPositions, usePrices, useRemovePosition } from '@/hooks/useMyPositions';
 import { AddPositionModal } from '@/components/AddPositionModal';
 import { Web3Scan } from '@/components/Web3Scan';
-import { Button, Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
+import { Card, FadeRise, Skeleton, Stagger, StaggerItem } from '@/components/ui';
 import { formatApr, getFreshness } from '@/lib/utils/apr-utils';
 import type { EnrichedPosition } from '@/types/portfolio';
 
@@ -75,9 +75,16 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <Web3Scan />
-            <Button leftIcon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title="Adding positions is currently disabled"
+              className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md border border-hairline bg-surface-active px-4 text-sm font-medium text-fg-faint"
+            >
+              <Plus size={16} />
               Add Position
-            </Button>
+            </button>
           </div>
         </FadeRise>
 
@@ -137,9 +144,16 @@ export default function DashboardPage() {
                 Add a position to track its live APR and USD value.
               </p>
               <div className="mt-5 flex justify-center">
-                <Button leftIcon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  title="Adding positions is currently disabled"
+                  className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md border border-hairline bg-surface-active px-4 text-sm font-medium text-fg-faint"
+                >
+                  <Plus size={16} />
                   Add Position
-                </Button>
+                </button>
               </div>
             </Card>
           </FadeRise>
