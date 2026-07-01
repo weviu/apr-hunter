@@ -49,10 +49,11 @@ body {
   font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Offset in-page anchor jumps (#opportunities, #compare) so the target heading
-   isn't hidden under the sticky header. */
+/* Offset in-page anchor jumps (#opportunities, #compare, #signals) so the target
+   heading isn't hidden under the sticky header. The target sections carry their
+   own top padding, so this only needs to clear the header itself. */
 html {
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 2.5rem;
 }
 
 ::selection {

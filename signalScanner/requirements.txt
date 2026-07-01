@@ -1,0 +1,5 @@
+# Signal scanner (signalScanner/scanner.py) runtime deps.
+# Install: pip install -r signalScanner/requirements.txt
+ccxt
+pandas
+numpy

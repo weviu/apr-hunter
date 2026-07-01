@@ -3,6 +3,7 @@
 import { Zap, TrendingUp, Database, ArrowRight } from 'lucide-react';
 import { AprComparison } from '@/components/apr-comparison';
 import { TopOpportunities } from '@/components/top-opportunities';
+import { LiveSignals } from '@/components/LiveSignals';
 import { Header } from '@/components/Header';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -137,8 +138,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Live Signals */}
+      <section id="signals" className="py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeRise className="mb-8">
+            <h2 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Live Trading Signals</h2>
+            <p className="mt-1 text-fg-muted">
+              Buy/sell setups from our multi-strategy scanner across crypto and metals
+            </p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-fg-faint">
+              Nadaraya-Watson envelope, RSI, Squeeze Momentum, mean-reversion &amp; Smart Money
+              Concepts. 15m timeframe, scanned every 5 minutes.
+            </p>
+          </FadeRise>
+          <LiveSignals />
+        </div>
+      </section>
+
       {/* Coming Soon */}
-      <section id="roadmap" className="py-16">
+      <section id="roadmap" className="border-t border-hairline bg-surface/40 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeRise>
             <Card className="border-accent/20 bg-accent-soft p-8 sm:p-12">

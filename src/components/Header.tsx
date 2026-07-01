@@ -38,6 +38,9 @@ export function Header() {
             <Link href="/#compare" className={navLinkClass}>
               Compare
             </Link>
+            <Link href="/#signals" className={navLinkClass}>
+              Signals
+            </Link>
             {!isLoading && user && (
               <Link href="/dashboard" className={navLinkClass}>
                 My Positions

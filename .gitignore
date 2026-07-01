@@ -37,3 +37,13 @@ package.json
 
 # Docs
 docs/
+
+# Data
+data/
+UI/
+
+# Signal scanner (Python)
+signalScanner/logs/
+signalScanner/__pycache__/
+__pycache__/
+*.pyc
